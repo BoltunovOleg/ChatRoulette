@@ -1,0 +1,17 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:view="clr-namespace:ChatRoulette.View"
+                    xmlns:viewModel="clr-namespace:ChatRoulette.ViewModel">
+    <DataTemplate DataType="{x:Type viewModel:MainViewModel}">
+        <view:MainView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type viewModel:HomeViewModel}">
+        <view:HomeView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type viewModel:SessionViewModel}">
+        <view:SessionView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type viewModel:SessionPreferencesViewModel}">
+        <view:SessionPreferencesView />
+    </DataTemplate>
+</ResourceDictionary>
