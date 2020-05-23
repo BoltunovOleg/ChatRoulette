@@ -19,6 +19,7 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
+    <CefSharpAnyCpuSupport>true</CefSharpAnyCpuSupport>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -179,7 +180,6 @@
     <Compile Include="Converters\ChatConnectionsToCountConverter.cs" />
     <Compile Include="Converters\ChatSessionToConnectionsCount.cs" />
     <Compile Include="Converters\InverseBoolConverter.cs" />
-    <Compile Include="Converters\InverseChatConnectionsToCountConverter.cs" />
     <Compile Include="Converters\StatusToVisibilityConverter.cs" />
     <Compile Include="Ioc\ViewModelLocator.cs" />
     <Compile Include="Properties\Annotations.cs" />
@@ -280,9 +280,7 @@
       <Name>ChatRoulette.Repository</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Model\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

@@ -20,9 +20,6 @@ namespace ChatRoulette.Utils
         [DllImport(Kernel32DllName)]
         private static extern IntPtr GetConsoleWindow();
 
-        [DllImport(Kernel32DllName)]
-        private static extern int GetConsoleOutputCP();
-
         public static bool HasConsole => GetConsoleWindow() != IntPtr.Zero;
 
         public static void Show()

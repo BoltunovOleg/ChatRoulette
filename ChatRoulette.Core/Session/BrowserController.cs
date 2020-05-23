@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows.Media;
@@ -29,8 +30,12 @@ namespace ChatRoulette.Core.Session
             if (!Cef.IsInitialized)
             {
                 var cefSettings = new CefSettings();
+                cefSettings.BrowserSubprocessPath = Path.Combine(
+                    AppDomain.CurrentDomain.SetupInformation.ApplicationBase,
+                    Environment.Is64BitProcess ? "x64" : "x86",
+                    "CefSharp.BrowserSubprocess.exe");
                 cefSettings.CefCommandLineArgs.Add("enable-media-stream", "1");
-                Cef.Initialize(cefSettings);
+                Cef.Initialize(cefSettings, performDependencyCheck: false, browserProcessHandler: null);
             }
 
             Cef.GetGlobalCookieManager().SetCookie("https://chatroulette.com",

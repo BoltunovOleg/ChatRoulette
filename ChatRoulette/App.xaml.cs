@@ -1,14 +1,11 @@
 ﻿using System;
 using System.IO;
 using System.Reflection;
-using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
 using ChatRoulette.Core.Settings;
 using ChatRoulette.Ioc;
-using ChatRoulette.Utils;
 using NLog;
-using Renci.SshNet.Messages;
 
 namespace ChatRoulette
 {
@@ -17,17 +14,30 @@ namespace ChatRoulette
         private const string SettingsPath = "settings.json";
         public static Version CurrentVersion => Assembly.GetEntryAssembly()?.GetName().Version;
 
-        protected override void OnStartup(StartupEventArgs e)
+        public App()
         {
             IocKernel.Initialize(new IocConfiguration());
-            
-
+            AppDomain.CurrentDomain.AssemblyResolve += Resolver;
             LogMachineDetails();
             var settingsService = IocKernel.Get<SettingsService>();
             var path = Path.Combine(Environment.CurrentDirectory, SettingsPath);
-            var res = settingsService.LoadAsync(path);
+            settingsService.LoadAsync(path);
+        }
 
-            base.OnStartup(e);
+        private static Assembly Resolver(object sender, ResolveEventArgs args)
+        {
+            if (args.Name.StartsWith("CefSharp"))
+            {
+                var assemblyName = args.Name.Split(new[] {','}, 2)[0] + ".dll";
+                var archSpecificPath = Path.Combine(AppDomain.CurrentDomain.SetupInformation.ApplicationBase,
+                    Environment.Is64BitProcess ? "x64" : "x86", assemblyName);
+
+                return File.Exists(archSpecificPath)
+                    ? Assembly.LoadFile(archSpecificPath)
+                    : null;
+            }
+
+            return null;
         }
 
         private static void LogMachineDetails()
@@ -36,7 +46,7 @@ namespace ChatRoulette
 
             var text = "OS: " + computer.OSPlatform + " v" + computer.OSVersion + Environment.NewLine +
                        computer.OSFullName + Environment.NewLine +
-                       "RAM: " + computer.TotalPhysicalMemory.ToString() + Environment.NewLine +
+                       "RAM: " + computer.TotalPhysicalMemory + Environment.NewLine +
                        "Language: " + computer.InstalledUICulture.EnglishName;
             LogManager.GetCurrentClassLogger().Info(text);
         }
