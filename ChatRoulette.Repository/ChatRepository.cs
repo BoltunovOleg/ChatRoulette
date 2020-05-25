@@ -90,9 +90,12 @@ namespace ChatRoulette.Repository
         /// <exception cref="EntityFrameworkException"></exception>
         public async Task<ChatSession> CloseSessionAsync(ChatSession session)
         {
+            int n = 1;
+            if (session.DateStart.Hour >= 23)
+                n = 0;
             var convertedDateStart = new DateTime(session.DateStart.Year, session.DateStart.Month,
                 session.DateStart.Day,
-                session.DateStart.Hour + 1, 0, 0);
+                session.DateStart.Hour + n, 0, 0);
             try
             {
                 session.DateClosed = DateTime.Now;
