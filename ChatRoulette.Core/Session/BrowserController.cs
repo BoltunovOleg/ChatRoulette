@@ -1,6 +1,8 @@
 ﻿using System;
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -29,12 +31,33 @@ namespace ChatRoulette.Core.Session
             if (!Cef.IsInitialized)
             {
                 var cefSettings = new CefSettings();
+                cefSettings.BrowserSubprocessPath = Path.Combine(
+                    AppDomain.CurrentDomain.SetupInformation.ApplicationBase,
+                    Environment.Is64BitProcess ? "x64" : "x86",
+                    "CefSharp.BrowserSubprocess.exe");
                 cefSettings.CefCommandLineArgs.Add("enable-media-stream", "1");
-                Cef.Initialize(cefSettings);
+                if (File.Exists(Path.Combine(Environment.CurrentDirectory, "video.y4m")))
+                {
+                    cefSettings.CefCommandLineArgs.Add("use-fake-device-for-media-stream");
+                    cefSettings.CefCommandLineArgs.Add("--use-file-for-fake-video-capture", "video.y4m");
+                }
+
+                Cef.Initialize(cefSettings, performDependencyCheck: false, browserProcessHandler: null);
+            }
+
+            var m = mod;
+            if (mod == "0")
+            {
+                var rnd = new Random();
+                var r1 = rnd.Next(0, 100);
+                var r2 = rnd.Next(0, 9);
+                if (r1 % 2 == 0)
+                    m = "-" + m;
+                m += "." + r2;
             }
 
             Cef.GetGlobalCookieManager().SetCookie("https://chatroulette.com",
-                new Cookie() {Path = "/", Domain = "chatroulette.com", Name = "mod", Value = mod});
+                new Cookie() {Path = "/", Domain = "chatroulette.com", Name = "mod", Value = m});
 
             this._browser = new ChromiumWebBrowser("https://chatroulette.com");
 

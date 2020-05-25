@@ -1,10 +1,7 @@
 ﻿using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 using ChatRoulette.Ioc;
 using ChatRoulette.Utils.Commands;
-using MaterialDesignThemes.Wpf;
 
 namespace ChatRoulette.ViewModel
 {
@@ -37,11 +34,11 @@ namespace ChatRoulette.ViewModel
             this.StartSessionCommand = new RelayCommand(this.Execute);
         }
 
-        private async Task Execute()
+        private Task Execute()
         {
             var sessionPreferencesViewModel = IocKernel.Get<SessionPreferencesViewModel>();
-
             this.Content = sessionPreferencesViewModel;
+            return Task.CompletedTask;
         }
     }
 }

@@ -148,9 +148,13 @@ namespace ChatRoulette.Core.Session
 
             if (!this._sessionPreference.KeyToResultBinds.ContainsKey(key))
                 return null;
+            if (this.CurrentConnectionInfo.Handled)
+                return null;
+
+            this.CurrentConnectionInfo.DateEnd = DateTime.Now;
+            this.CurrentConnectionInfo.Handled = true;
 
             var result = this._sessionPreference.KeyToResultBinds[key];
-            this.CurrentConnectionInfo.DateEnd = DateTime.Now;
             this.MakeScreenShoot(result);
             var res = await this._repository.AddResultAsync(this._session, result, "");
             this.ChatConnections.Add(res);

@@ -40,7 +40,7 @@ namespace ChatRoulette.Repository.Model
                 connections += hiddenInappropriate;
             }
 
-            var result = "";
+            string result;
             if (this.DateStart.Date == this.DateEnd?.Date)
                 result = $"{this.DateStart:dd.MM.yyy}{splitter}|{splitter}{this.DateStart:HH} - {this.DateEnd:HH}";
             else

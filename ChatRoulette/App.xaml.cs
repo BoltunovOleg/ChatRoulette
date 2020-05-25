@@ -6,9 +6,9 @@ using System.Windows;
 using System.Windows.Threading;
 using ChatRoulette.Core.Settings;
 using ChatRoulette.Ioc;
-using ChatRoulette.Utils;
+using Exort.AutoUpdate.Wpf;
+using Newtonsoft.Json;
 using NLog;
-using Renci.SshNet.Messages;
 
 namespace ChatRoulette
 {
@@ -17,17 +17,53 @@ namespace ChatRoulette
         private const string SettingsPath = "settings.json";
         public static Version CurrentVersion => Assembly.GetEntryAssembly()?.GetName().Version;
 
-        protected override void OnStartup(StartupEventArgs e)
+        public App()
         {
             IocKernel.Initialize(new IocConfiguration());
-            
+            AppDomain.CurrentDomain.AssemblyResolve += Resolver;
 
+            Current.DispatcherUnhandledException += CurrentOnDispatcherUnhandledException;
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
+
+            var autoUpdater = new AutoUpdater("BoltunovOleg", "ChatRoulette", Assembly.GetExecutingAssembly());
+            var t = autoUpdater.CheckUpdate().GetAwaiter().GetResult();
+            if (t)
+            {
+                var release = autoUpdater.GetLatestRelease().GetAwaiter().GetResult();
+                autoUpdater.ShowReleaseInfo(release);
+                App.Current.Shutdown(0);
+            }
             LogMachineDetails();
             var settingsService = IocKernel.Get<SettingsService>();
             var path = Path.Combine(Environment.CurrentDirectory, SettingsPath);
-            var res = settingsService.LoadAsync(path);
+            settingsService.LoadAsync(path);
+        }
 
-            base.OnStartup(e);
+        private void CurrentDomainOnUnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            LogManager.GetCurrentClassLogger().Error($"Unhandled exception{Environment.NewLine}{JsonConvert.SerializeObject(e.ExceptionObject)}");
+        }
+
+        private void CurrentOnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+        {
+            LogManager.GetCurrentClassLogger().Error($"Unhandled exception{Environment.NewLine}{e.Exception}");
+            e.Handled = true;
+        }
+
+        private static Assembly Resolver(object sender, ResolveEventArgs args)
+        {
+            if (args.Name.StartsWith("CefSharp"))
+            {
+                var assemblyName = args.Name.Split(new[] {','}, 2)[0] + ".dll";
+                var archSpecificPath = Path.Combine(AppDomain.CurrentDomain.SetupInformation.ApplicationBase,
+                    Environment.Is64BitProcess ? "x64" : "x86", assemblyName);
+
+                return File.Exists(archSpecificPath)
+                    ? Assembly.LoadFile(archSpecificPath)
+                    : null;
+            }
+
+            return null;
         }
 
         private static void LogMachineDetails()
@@ -36,7 +72,7 @@ namespace ChatRoulette
 
             var text = "OS: " + computer.OSPlatform + " v" + computer.OSVersion + Environment.NewLine +
                        computer.OSFullName + Environment.NewLine +
-                       "RAM: " + computer.TotalPhysicalMemory.ToString() + Environment.NewLine +
+                       "RAM: " + computer.TotalPhysicalMemory + Environment.NewLine +
                        "Language: " + computer.InstalledUICulture.EnglishName;
             LogManager.GetCurrentClassLogger().Info(text);
         }
@@ -44,14 +80,6 @@ namespace ChatRoulette
         private void App_OnExit(object sender, ExitEventArgs e)
         {
             IocKernel.Get<SettingsService>().SaveAsync(SettingsPath);
-        }
-
-        private void App_OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
-        {
-            LogManager.GetCurrentClassLogger().Error($"Unhandled exception{Environment.NewLine}{e.Exception}");
-            e.Handled = true;
-            //MessageBox.Show("Критическая ошибка, программа будет закрыта." +Environment.NewLine +
-            //                "Сообщите разработчику.");
         }
     }
 }

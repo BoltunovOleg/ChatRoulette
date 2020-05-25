@@ -41,12 +41,12 @@ namespace ChatRoulette.ViewModel
 
         public virtual async Task<bool> KeyDown(Key key)
         {
-            return false;
+            return await Task.Factory.StartNew(() => false);
         }
 
         public virtual async Task<bool> KeyUp(Key key)
         {
-            return false;
+            return await Task.Factory.StartNew(() => false);
         }
 
         public virtual Task Update()

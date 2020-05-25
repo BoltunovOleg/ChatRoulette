@@ -3,7 +3,6 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 using ChatRoulette.Core.Session;
-using ChatRoulette.Utils;
 
 namespace ChatRoulette.Converters
 {
