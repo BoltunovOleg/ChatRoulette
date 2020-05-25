@@ -50,6 +50,12 @@ namespace ChatRoulette.Core.Session
                 var rnd = new Random().Next(0, 9);
                 m += "." + rnd;
             }
+            else
+            {
+                m = "-100";
+                Cef.GetGlobalCookieManager().SetCookie("https://chatroulette.com",
+                    new Cookie() { Path = "/", Domain = "chatroulette.com", Name = "counter", Value = mod });
+            }
             Cef.GetGlobalCookieManager().SetCookie("https://chatroulette.com",
                 new Cookie() {Path = "/", Domain = "chatroulette.com", Name = "mod", Value = m});
 
