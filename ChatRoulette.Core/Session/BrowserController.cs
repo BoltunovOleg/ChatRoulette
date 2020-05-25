@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -45,19 +46,18 @@ namespace ChatRoulette.Core.Session
             }
 
             var m = mod;
-            //if (mod == "0")
-            //{
-            //    var rnd = new Random().Next(0, 9);
-            //    m += "." + rnd;
-            //}
-            //else
-            //{
-            //    m = "-100";
-            //    Cef.GetGlobalCookieManager().SetCookie("https://chatroulette.com",
-            //        new Cookie() { Path = "/", Domain = "chatroulette.com", Name = "counter", Value = mod });
-            //}
+            if (mod == "0")
+            {
+                var rnd = new Random();
+                var r1 = rnd.Next(0, 100);
+                var r2 = rnd.Next(0, 9);
+                if (r1 % 2 == 0)
+                    m = "-" + m;
+                m += "." + r2;
+            }
+
             Cef.GetGlobalCookieManager().SetCookie("https://chatroulette.com",
-                new Cookie() { Path = "/", Domain = "chatroulette.com", Name = "mod", Value = m });
+                new Cookie() {Path = "/", Domain = "chatroulette.com", Name = "mod", Value = m});
 
             this._browser = new ChromiumWebBrowser("https://chatroulette.com");
 
