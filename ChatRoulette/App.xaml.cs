@@ -25,7 +25,7 @@ namespace ChatRoulette
             Current.DispatcherUnhandledException += CurrentOnDispatcherUnhandledException;
             AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
 
-            var autoUpdater = new AutoUpdater("BoltunovOleg", "test", Assembly.GetExecutingAssembly());
+            var autoUpdater = new AutoUpdater("BoltunovOleg", "ChatRoulette", Assembly.GetExecutingAssembly());
             var t = autoUpdater.CheckUpdate().GetAwaiter().GetResult();
             if (t)
             {
