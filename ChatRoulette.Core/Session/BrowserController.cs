@@ -45,19 +45,19 @@ namespace ChatRoulette.Core.Session
             }
 
             var m = mod;
-            if (mod == "0")
-            {
-                var rnd = new Random().Next(0, 9);
-                m += "." + rnd;
-            }
-            else
-            {
-                m = "-100";
-                Cef.GetGlobalCookieManager().SetCookie("https://chatroulette.com",
-                    new Cookie() { Path = "/", Domain = "chatroulette.com", Name = "counter", Value = mod });
-            }
+            //if (mod == "0")
+            //{
+            //    var rnd = new Random().Next(0, 9);
+            //    m += "." + rnd;
+            //}
+            //else
+            //{
+            //    m = "-100";
+            //    Cef.GetGlobalCookieManager().SetCookie("https://chatroulette.com",
+            //        new Cookie() { Path = "/", Domain = "chatroulette.com", Name = "counter", Value = mod });
+            //}
             Cef.GetGlobalCookieManager().SetCookie("https://chatroulette.com",
-                new Cookie() {Path = "/", Domain = "chatroulette.com", Name = "mod", Value = m});
+                new Cookie() { Path = "/", Domain = "chatroulette.com", Name = "mod", Value = m });
 
             this._browser = new ChromiumWebBrowser("https://chatroulette.com");
 
