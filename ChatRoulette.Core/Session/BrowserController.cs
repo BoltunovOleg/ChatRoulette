@@ -35,11 +35,23 @@ namespace ChatRoulette.Core.Session
                     Environment.Is64BitProcess ? "x64" : "x86",
                     "CefSharp.BrowserSubprocess.exe");
                 cefSettings.CefCommandLineArgs.Add("enable-media-stream", "1");
+                if (File.Exists(Path.Combine(Environment.CurrentDirectory, "video.y4m")))
+                {
+                    cefSettings.CefCommandLineArgs.Add("use-fake-device-for-media-stream");
+                    cefSettings.CefCommandLineArgs.Add("--use-file-for-fake-video-capture", "video.y4m");
+                }
+
                 Cef.Initialize(cefSettings, performDependencyCheck: false, browserProcessHandler: null);
             }
 
+            var m = mod;
+            if (mod == "0")
+            {
+                var rnd = new Random().Next(0, 9);
+                m += "." + rnd;
+            }
             Cef.GetGlobalCookieManager().SetCookie("https://chatroulette.com",
-                new Cookie() {Path = "/", Domain = "chatroulette.com", Name = "mod", Value = mod});
+                new Cookie() {Path = "/", Domain = "chatroulette.com", Name = "mod", Value = m});
 
             this._browser = new ChromiumWebBrowser("https://chatroulette.com");
 

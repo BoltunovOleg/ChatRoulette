@@ -38,6 +38,7 @@ namespace ChatRoulette.View
 
         private void ButtonExit_OnClick(object sender, RoutedEventArgs e)
         {
+            MessageBox.Show("test_6");
             this.Close();
         }
 

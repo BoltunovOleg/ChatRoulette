@@ -1,10 +1,13 @@
 ﻿using System;
 using System.IO;
 using System.Reflection;
+using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
 using ChatRoulette.Core.Settings;
 using ChatRoulette.Ioc;
+using Exort.AutoUpdate.Wpf;
+using Newtonsoft.Json;
 using NLog;
 
 namespace ChatRoulette
@@ -18,10 +21,33 @@ namespace ChatRoulette
         {
             IocKernel.Initialize(new IocConfiguration());
             AppDomain.CurrentDomain.AssemblyResolve += Resolver;
+
+            Current.DispatcherUnhandledException += CurrentOnDispatcherUnhandledException;
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
+
+            var autoUpdater = new AutoUpdater("BoltunovOleg", "test", Assembly.GetExecutingAssembly());
+            var t = autoUpdater.CheckUpdate().GetAwaiter().GetResult();
+            if (t)
+            {
+                var release = autoUpdater.GetLatestRelease().GetAwaiter().GetResult();
+                autoUpdater.ShowReleaseInfo(release);
+                App.Current.Shutdown(0);
+            }
             LogMachineDetails();
             var settingsService = IocKernel.Get<SettingsService>();
             var path = Path.Combine(Environment.CurrentDirectory, SettingsPath);
             settingsService.LoadAsync(path);
+        }
+
+        private void CurrentDomainOnUnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            LogManager.GetCurrentClassLogger().Error($"Unhandled exception{Environment.NewLine}{JsonConvert.SerializeObject(e.ExceptionObject)}");
+        }
+
+        private void CurrentOnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+        {
+            LogManager.GetCurrentClassLogger().Error($"Unhandled exception{Environment.NewLine}{e.Exception}");
+            e.Handled = true;
         }
 
         private static Assembly Resolver(object sender, ResolveEventArgs args)
@@ -54,14 +80,6 @@ namespace ChatRoulette
         private void App_OnExit(object sender, ExitEventArgs e)
         {
             IocKernel.Get<SettingsService>().SaveAsync(SettingsPath);
-        }
-
-        private void App_OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
-        {
-            LogManager.GetCurrentClassLogger().Error($"Unhandled exception{Environment.NewLine}{e.Exception}");
-            e.Handled = true;
-            //MessageBox.Show("Критическая ошибка, программа будет закрыта." +Environment.NewLine +
-            //                "Сообщите разработчику.");
         }
     }
 }
