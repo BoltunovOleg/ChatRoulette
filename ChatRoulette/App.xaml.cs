@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Threading;
 using ChatRoulette.Core.Settings;
 using ChatRoulette.Ioc;
+using ChatRoulette.Utils;
 using Exort.AutoUpdate.Wpf;
 using Newtonsoft.Json;
 using NLog;
@@ -19,6 +20,11 @@ namespace ChatRoulette
 
         public App()
         {
+            if (File.Exists(Path.Combine(Environment.CurrentDirectory, "console")))
+            {
+                if (!ConsoleManager.HasConsole)
+                    ConsoleManager.Show();
+            }
             IocKernel.Initialize(new IocConfiguration());
             AppDomain.CurrentDomain.AssemblyResolve += Resolver;
 
@@ -58,9 +64,17 @@ namespace ChatRoulette
                 var archSpecificPath = Path.Combine(AppDomain.CurrentDomain.SetupInformation.ApplicationBase,
                     Environment.Is64BitProcess ? "x64" : "x86", assemblyName);
 
-                return File.Exists(archSpecificPath)
-                    ? Assembly.LoadFile(archSpecificPath)
-                    : null;
+                LogManager.GetCurrentClassLogger().Info($"Try to load assembly: {assemblyName}\t|\t{archSpecificPath}\t|\t{args.Name} ");
+
+                if (File.Exists(archSpecificPath))
+                {
+                    return Assembly.LoadFile(archSpecificPath);
+                }
+                else
+                {
+                    LogManager.GetCurrentClassLogger().Info($"Assembly not found {archSpecificPath}");
+                    return null;
+                }
             }
 
             return null;
