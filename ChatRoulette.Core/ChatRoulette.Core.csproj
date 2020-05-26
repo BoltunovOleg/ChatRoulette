@@ -171,6 +171,7 @@
     <Compile Include="Session\SessionEndEventHandler.cs" />
     <Compile Include="Session\SessionPreference.cs" />
     <Compile Include="Settings\SettingsService.cs" />
+    <Compile Include="Utils\InetUtils.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
@@ -182,6 +183,7 @@
       <Name>ChatRoulette.Repository</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

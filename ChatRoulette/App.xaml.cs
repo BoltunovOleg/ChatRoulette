@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Reflection;
-using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
 using ChatRoulette.Core.Settings;
@@ -28,8 +27,8 @@ namespace ChatRoulette
             IocKernel.Initialize(new IocConfiguration());
             AppDomain.CurrentDomain.AssemblyResolve += Resolver;
 
-            Current.DispatcherUnhandledException += CurrentOnDispatcherUnhandledException;
-            AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
+            Current.DispatcherUnhandledException += this.CurrentOnDispatcherUnhandledException;
+            AppDomain.CurrentDomain.UnhandledException += this.CurrentDomainOnUnhandledException;
 
             var autoUpdater = new AutoUpdater("BoltunovOleg", "ChatRoulette", Assembly.GetExecutingAssembly());
             var t = autoUpdater.CheckUpdate().GetAwaiter().GetResult();

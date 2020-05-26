@@ -24,6 +24,7 @@ namespace ChatRoulette.Core.Session
         private readonly ChatRepository _repository;
         private readonly SessionPreference _sessionPreference;
         private readonly ChatSession _session;
+        private readonly Logger _logger;
 
         public BrowserController BrowserController
         {
@@ -41,12 +42,13 @@ namespace ChatRoulette.Core.Session
         private Recorder _recorder;
         private BrowserController _browserController;
 
-        public SessionController(ChatRepository repository, SessionPreference sessionPreference, ChatSession session)
+        public SessionController(ChatRepository repository, SessionPreference sessionPreference, ChatSession session, Logger logger)
         {
             this.BrowserController = new BrowserController(sessionPreference.Mod);
             this._repository = repository;
             this._sessionPreference = sessionPreference;
             this._session = session;
+            this._logger = logger;
             this.ChatConnections = new ObservableCollection<ChatConnection>(this._session.ChatConnections);
             for (var i = 0; i < this.ChatConnections.Count; i++)
                 this.ChatConnectionInfos.Add(new ChatConnectionInfo(i + 1));
