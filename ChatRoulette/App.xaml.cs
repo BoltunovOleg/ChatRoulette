@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
@@ -28,9 +29,10 @@ namespace ChatRoulette
 
         public App()
         {
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            AppDomain.CurrentDomain.AssemblyResolve += Resolver;
             this.SetCred();
             IocKernel.Initialize(new IocConfiguration());
-            AppDomain.CurrentDomain.AssemblyResolve += Resolver;
 
             Current.DispatcherUnhandledException += this.CurrentOnDispatcherUnhandledException;
             AppDomain.CurrentDomain.UnhandledException += this.CurrentDomainOnUnhandledException;
@@ -48,6 +50,7 @@ namespace ChatRoulette
             var settingsService = IocKernel.Get<SettingsService>();
             var path = Path.Combine(Environment.CurrentDirectory, SettingsPath);
             settingsService.LoadAsync(path);
+            this.FixPreferences();
         }
 
         protected override void OnStartup(StartupEventArgs e)
@@ -58,6 +61,29 @@ namespace ChatRoulette
 
             if (IsConsole && !ConsoleManager.HasConsole)
                 ConsoleManager.Show();
+        }
+
+        private void FixPreferences()
+        {
+            var service = IocKernel.Get<SettingsService>();
+            var minTime = TimeSpan.FromMinutes(29);
+            foreach (var sessionPreference in service.Settings.SessionPreferences)
+            {
+                if (sessionPreference.WorkTime < minTime)
+                {
+                    SendBugReport("Время сессии менее 29 минут");
+                }
+                if (sessionPreference.Mod == "0")
+                {
+                    sessionPreference.WithBan = true;
+                    sessionPreference.WithReport = true;
+                }
+                else
+                {
+                    sessionPreference.WithBan = false;
+                    sessionPreference.WithReport = false;
+                }
+            }
         }
 
         private void SetCred()
@@ -85,13 +111,21 @@ namespace ChatRoulette
 
         public static async void SendBugReport(object obj)
         {
-            var userId = 0;
-            var settingsService = IocKernel.Get<SettingsService>();
-            if (settingsService?.Settings != null)
-                userId = settingsService.Settings.UserId;
-            await Bugtracker.CreateIssue("BoltunovOleg", "ChatRoulette", "Unhandled exception",
-                $"UserId: {userId}{Environment.NewLine}" +
-                $"{JsonConvert.SerializeObject(obj)}");
+            try
+            {
+                var userId = 0;
+                var settingsService = IocKernel.Get<SettingsService>();
+                if (settingsService?.Settings != null)
+                    userId = settingsService.Settings.UserId;
+                await Bugtracker.CreateIssue("BoltunovOleg", "ChatRoulette", "Unhandled exception",
+                    $"UserId: {userId}{Environment.NewLine}" +
+                    $"{JsonConvert.SerializeObject(obj)}");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Critical error");
+                App.Current.Shutdown(0);
+            }
         }
 
         private void CurrentDomainOnUnhandledException(object sender, UnhandledExceptionEventArgs e)
