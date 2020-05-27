@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -13,28 +14,24 @@ namespace ChatRoulette.Core.Session
 {
     public class BrowserController : INotifyPropertyChanged
     {
-        public ChromiumWebBrowser Browser
-        {
-            get => this._browser;
-            set
-            {
-                this._browser = value;
-                this.OnPropertyChanged();
-            }
-        }
-
+        private readonly Logger _logger;
         private bool _isFirstLoading = true;
         private ChromiumWebBrowser _browser;
+        private bool _browserBanState;
 
         public BrowserController(string mod, Logger logger)
         {
+            this._logger = logger;
+
             if (!Cef.IsInitialized)
             {
-                var cefSettings = new CefSettings();
-                cefSettings.BrowserSubprocessPath = Path.Combine(
-                    AppDomain.CurrentDomain.SetupInformation.ApplicationBase,
-                    Environment.Is64BitProcess ? "x64" : "x86",
-                    "CefSharp.BrowserSubprocess.exe");
+                var cefSettings = new CefSettings
+                {
+                    BrowserSubprocessPath = Path.Combine(
+                        AppDomain.CurrentDomain.SetupInformation.ApplicationBase,
+                        Environment.Is64BitProcess ? "x64" : "x86",
+                        "CefSharp.BrowserSubprocess.exe")
+                };
                 cefSettings.CefCommandLineArgs.Add("enable-media-stream", "1");
                 if (File.Exists(Path.Combine(Environment.CurrentDirectory, "video.y4m")))
                 {
@@ -49,7 +46,7 @@ namespace ChatRoulette.Core.Session
             if (mod != "0")
             {
                 Cef.GetGlobalCookieManager().SetCookie("https://chatroulette.com",
-                    new Cookie() { Path = "/", Domain = "chatroulette.com", Name = "counter", Value = mod });
+                    new Cookie() {Path = "/", Domain = "chatroulette.com", Name = "counter", Value = mod});
                 m = "-100";
             }
 
@@ -57,6 +54,15 @@ namespace ChatRoulette.Core.Session
                 new Cookie() {Path = "/", Domain = "chatroulette.com", Name = "mod", Value = m});
 
             this._browser = new ChromiumWebBrowser("https://chatroulette.com");
+            this._browser.ConsoleMessage +=
+                (sender, args) =>
+                {
+                    this._logger.Trace($"Browser console message: {args.Message}");
+                    if (args.Message.Contains("partner banned by moderator"))
+                        this.BrowserBanState = true;
+                    if (args.Message.Contains("Stream started"))
+                        this.BrowserBanState = false;
+                };
 
             this._browser.LoadingStateChanged += this.ChromeBrowserOnLoadingStateChanged;
         }
@@ -65,65 +71,53 @@ namespace ChatRoulette.Core.Session
         {
             this._isFirstLoading = true;
             this._browser.Reload();
+            this._logger.Info("Page reloaded successfully");
             return Task.CompletedTask;
         }
 
-        public PngBitmapEncoder GetBrowserScreenShot()
+        public BitmapEncoder GetBrowserScreenShot(BitmapEncoder encoder)
         {
-            var renderTargetBitmap = new RenderTargetBitmap(Convert.ToInt32(this._browser.ActualWidth),
-                Convert.ToInt32(this._browser.ActualHeight), 96, 96, PixelFormats.Pbgra32);
-            renderTargetBitmap.Render(this._browser);
-            var pngImage = new PngBitmapEncoder();
-            pngImage.Frames.Add(BitmapFrame.Create(renderTargetBitmap));
-            return pngImage;
+            this.Browser.Dispatcher.Invoke(() =>
+            {
+                var renderTargetBitmap = new RenderTargetBitmap(Convert.ToInt32(this._browser.ActualWidth),
+                    Convert.ToInt32(this._browser.ActualHeight), 96, 96, PixelFormats.Pbgra32);
+                renderTargetBitmap.Render(this._browser);
+                encoder.Frames.Add(BitmapFrame.Create(renderTargetBitmap));
+            });
+            return encoder;
         }
 
-        public async Task<string> NextPartner()
+        public void NextPartner()
         {
             if (!this._browser.CanExecuteJavascriptInMainFrame)
-                return null;
-
+                return;
+            this._logger.Trace($"Start next button click");
             var script = "$('#next')[0].click()";
-            var execResponse = await this._browser.EvaluateScriptAsync(script);
-            if (execResponse.Success)
-            {
-                var result = Convert.ToString(execResponse.Result);
-                return result;
-            }
 
-            return null;
+            this._browser.ExecuteScriptAsync(script);
+            this._logger.Trace($"Next button clicked");
         }
 
-        public async Task<string> ReportPartner()
+        public void ReportPartner()
         {
             if (!this._browser.CanExecuteJavascriptInMainFrame)
-                return null;
-
+                return;
+            this._logger.Trace($"Start report button click");
             var script = "$('#report')[0].click()";
-            var execResponse = await this._browser.EvaluateScriptAsync(script);
-            if (execResponse.Success)
-            {
-                var result = Convert.ToString(execResponse.Result);
-                return result;
-            }
 
-            return null;
+            this._browser.ExecuteScriptAsync(script);
+            this._logger.Trace($"Report button clicked");
         }
 
-        public async Task<string> BanPartner()
+        public void BanPartner()
         {
             if (!this._browser.CanExecuteJavascriptInMainFrame)
-                return null;
-
+                return;
+            this._logger.Trace($"Start ban button click");
             var script = "$('#ban')[0].click()";
-            var execResponse = await this._browser.EvaluateScriptAsync(script);
-            if (execResponse.Success)
-            {
-                var result = Convert.ToString(execResponse.Result);
-                return result;
-            }
 
-            return null;
+            this._browser.ExecuteScriptAsync(script);
+            this._logger.Trace($"Ban button clicked");
         }
 
         public async Task HidePartnerInfo()
@@ -252,6 +246,26 @@ namespace ChatRoulette.Core.Session
         {
             if (this._browser.IsInitialized)
                 this._browser.LoadHtml("<html><body>Closing session...</body></html>");
+        }
+
+        public ChromiumWebBrowser Browser
+        {
+            get => this._browser;
+            set
+            {
+                this._browser = value;
+                this.OnPropertyChanged();
+            }
+        }
+
+        public bool BrowserBanState
+        {
+            get => this._browserBanState;
+            set
+            {
+                this._browserBanState = value;
+                this.OnPropertyChanged();
+            }
         }
 
         private async void ChromeBrowserOnLoadingStateChanged(object sender, LoadingStateChangedEventArgs e)

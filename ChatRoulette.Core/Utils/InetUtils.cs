@@ -4,7 +4,7 @@ namespace ChatRoulette.Core.Utils
 {
     public class InetUtils
     {
-        private string GetMyIp()
+        public static string GetMyIp()
         {
             try
             {

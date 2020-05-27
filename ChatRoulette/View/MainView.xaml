@@ -147,6 +147,11 @@
                             <TextBlock VerticalAlignment="Center" FontSize="12"
                                        Margin="0 0 10 0"
                                        Text="{Binding Path=SettingsService.Settings.UserId, StringFormat=Ваш идентификатор: {0}}" />
+                            <TextBlock VerticalAlignment="Center" FontSize="12"
+                                       Text="|" Margin="0 0 10 0" />
+                            <TextBlock VerticalAlignment="Center" FontSize="12"
+                                       Margin="0 0 10 0"
+                                       Text="{Binding Path=Content.ViewStatus}"/>
                         </StackPanel>
                         <TextBlock HorizontalAlignment="Right" Text="{Binding Content.Info}" />
                     </DockPanel>

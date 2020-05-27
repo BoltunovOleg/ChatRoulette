@@ -1,14 +1,19 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using ChatRoulette.Core.Settings;
 using ChatRoulette.Ioc;
 using ChatRoulette.Utils;
 using Exort.AutoUpdate.Wpf;
+using Exort.GithubBugtracker;
+using Meziantou.Framework.Win32;
 using Newtonsoft.Json;
 using NLog;
+using Octokit;
 
 namespace ChatRoulette
 {
@@ -16,14 +21,14 @@ namespace ChatRoulette
     {
         private const string SettingsPath = "settings.json";
         public static Version CurrentVersion => Assembly.GetEntryAssembly()?.GetName().Version;
+        public static GithubBugtracker Bugtracker => IocKernel.Get<GithubBugtracker>();
+        public static bool IsDebug { get; private set; }
+        public static bool IsConsole { get; private set; }
+        public static Credentials GtCredentials;
 
         public App()
         {
-            if (File.Exists(Path.Combine(Environment.CurrentDirectory, "console")))
-            {
-                if (!ConsoleManager.HasConsole)
-                    ConsoleManager.Show();
-            }
+            this.SetCred();
             IocKernel.Initialize(new IocConfiguration());
             AppDomain.CurrentDomain.AssemblyResolve += Resolver;
 
@@ -38,19 +43,67 @@ namespace ChatRoulette
                 autoUpdater.ShowReleaseInfo(release);
                 App.Current.Shutdown(0);
             }
+
             LogMachineDetails();
             var settingsService = IocKernel.Get<SettingsService>();
             var path = Path.Combine(Environment.CurrentDirectory, SettingsPath);
             settingsService.LoadAsync(path);
         }
 
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            base.OnStartup(e);
+            IsDebug = e.Args.Contains("debug");
+            IsConsole = e.Args.Contains("console");
+
+            if (IsConsole && !ConsoleManager.HasConsole)
+                ConsoleManager.Show();
+        }
+
+        private void SetCred()
+        {
+            var cred = CredentialManager.ReadCredential("GitHub");
+            if (cred == null)
+            {
+                var result = CredentialManager.PromptForCredentials(captionText: "GitHub аккаунт");
+                if (result == null)
+                {
+                    this.Shutdown(0);
+                    return;
+                }
+
+                CredentialManager.WriteCredential("GitHub", result.UserName, result.Password,
+                    CredentialPersistence.LocalMachine);
+
+                GtCredentials = new Credentials(result.UserName, result.Password);
+            }
+            else
+            {
+                GtCredentials = new Credentials(cred.UserName, cred.Password);
+            }
+        }
+
+        public static async void SendBugReport(object obj)
+        {
+            var userId = 0;
+            var settingsService = IocKernel.Get<SettingsService>();
+            if (settingsService?.Settings != null)
+                userId = settingsService.Settings.UserId;
+            await Bugtracker.CreateIssue("BoltunovOleg", "ChatRoulette", "Unhandled exception",
+                $"UserId: {userId}{Environment.NewLine}" +
+                $"{JsonConvert.SerializeObject(obj)}");
+        }
+
         private void CurrentDomainOnUnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
-            LogManager.GetCurrentClassLogger().Error($"Unhandled exception{Environment.NewLine}{JsonConvert.SerializeObject(e.ExceptionObject)}");
+            SendBugReport(e.ExceptionObject);
+            LogManager.GetCurrentClassLogger()
+                .Error($"Unhandled exception{Environment.NewLine}{JsonConvert.SerializeObject(e.ExceptionObject)}");
         }
 
         private void CurrentOnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
         {
+            SendBugReport(e.Exception);
             LogManager.GetCurrentClassLogger().Error($"Unhandled exception{Environment.NewLine}{e.Exception}");
             e.Handled = true;
         }
@@ -63,7 +116,8 @@ namespace ChatRoulette
                 var archSpecificPath = Path.Combine(AppDomain.CurrentDomain.SetupInformation.ApplicationBase,
                     Environment.Is64BitProcess ? "x64" : "x86", assemblyName);
 
-                LogManager.GetCurrentClassLogger().Info($"Try to load assembly: {assemblyName}\t|\t{archSpecificPath}\t|\t{args.Name} ");
+                LogManager.GetCurrentClassLogger()
+                    .Info($"Try to load assembly: {assemblyName}\t|\t{archSpecificPath}\t|\t{args.Name} ");
 
                 if (File.Exists(archSpecificPath))
                 {

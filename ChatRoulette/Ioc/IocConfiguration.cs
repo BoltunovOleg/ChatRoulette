@@ -1,6 +1,7 @@
 ﻿using ChatRoulette.Core.Settings;
 using ChatRoulette.Repository;
 using ChatRoulette.ViewModel;
+using Exort.GithubBugtracker;
 using Ninject.Modules;
 
 namespace ChatRoulette.Ioc
@@ -17,6 +18,9 @@ namespace ChatRoulette.Ioc
             this.Bind<SessionPreferencesViewModel>().ToSelf().InSingletonScope();
 
             this.Bind<SettingsService>().ToSelf().InSingletonScope();
+
+            this.Bind<GithubBugtracker>()
+                .ToConstant(new GithubBugtracker(App.GtCredentials.Login, App.GtCredentials.Password));
         }
     }
 }
