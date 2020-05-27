@@ -6,6 +6,7 @@ using System.Windows.Input;
 using ChatRoulette.Core.Settings;
 using ChatRoulette.Ioc;
 using ChatRoulette.Properties;
+using ChatRoulette.Repository.Model;
 using ChatRoulette.Utils;
 using MaterialDesignThemes.Wpf;
 
@@ -14,6 +15,7 @@ namespace ChatRoulette.ViewModel
     public abstract class BaseViewModel : DependencyObject, INotifyPropertyChanged, INotifyPropertyChanging
     {
         private string _info;
+        private string _viewStatus;
         public abstract string MenuCaption { get; }
         public abstract bool IsLoading { get; set; }
         public abstract bool ShowActionButton { get; set; }
@@ -21,6 +23,17 @@ namespace ChatRoulette.ViewModel
 
         public virtual string Caption => $"{this.MenuCaption}";
         public virtual string Description => $"v. {App.CurrentVersion}";
+
+        public virtual string ViewStatus
+        {
+            get => this._viewStatus;
+            set
+            {
+                this.OnPropertyChanging();
+                this._viewStatus = value;
+                this.OnPropertyChanged();
+            }
+        }
 
         public virtual string Info
         {

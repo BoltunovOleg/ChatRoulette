@@ -19,6 +19,8 @@
     <UserControl.Resources>
         <converters:StatusToVisibilityConverter x:Key="StatusToVisibilityConverter" TrueValue="Visible"
                                                 FalseValue="Collapsed" />
+        <converters:BoolToVisibilityConverter x:Key="InverseBoolConverter" TrueValue="Visible"
+                                                FalseValue="Collapsed" />
         <converters:ChatConnectionsToCountConverter x:Key="MaleConverter" Type="Male"/>
         <converters:ChatConnectionsToCountConverter x:Key="FemaleConverter" Type="Female"/>
         <converters:ChatConnectionsToCountConverter x:Key="OnePlusConverter" Type="OnePlus"/>
@@ -44,6 +46,11 @@
         <TextBlock Grid.Row="0" Grid.Column="0" Text="Ждем подключения..." HorizontalAlignment="Center"
                    VerticalAlignment="Center"
                    Visibility="{Binding SessionController.Status, Converter={StaticResource StatusToVisibilityConverter}}" />
+
+        <Border Grid.Row="0" Grid.Column="0" Background="{DynamicResource MaterialDesignPaper}"
+                Visibility="{Binding ResultSending, Converter={StaticResource InverseBoolConverter}}">
+            <TextBlock Text="Result sending..." HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Border>
 
         <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal">
             <Button Margin="15" Command="{Binding HideMyCameraCommand}">Скрыть камеру</Button>

@@ -1,16 +1,22 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Windows.Input;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows.Media.Imaging;
 using ChatRoulette.Core.Capture.DesktopVideo;
+using ChatRoulette.Core.Utils;
 using ChatRoulette.Repository;
 using ChatRoulette.Repository.Model;
+using Exort.GithubBugtracker;
+using Newtonsoft.Json;
 using NLog;
+using NLog.Targets;
 
 namespace ChatRoulette.Core.Session
 {
@@ -24,32 +30,40 @@ namespace ChatRoulette.Core.Session
         private readonly ChatRepository _repository;
         private readonly SessionPreference _sessionPreference;
         private readonly ChatSession _session;
-
-        public BrowserController BrowserController
-        {
-            get => this._browserController;
-            set
-            {
-                this._browserController = value;
-                this.OnPropertyChanged();
-            }
-        }
-
+        private readonly Logger _logger;
+        private readonly Action<object> _bugtrackerReport;
         private TimeSpan _sessionLeftTime;
         private Status _status;
         private ChatConnectionInfo _currentConnectionInfo;
         private Recorder _recorder;
         private BrowserController _browserController;
+        private string _ip;
+        private bool _banState;
+        private bool _browserBanState;
+        private bool _eventProcessingStarted;
 
-        public SessionController(ChatRepository repository, SessionPreference sessionPreference, ChatSession session)
+        public SessionController(ChatRepository repository, SessionPreference sessionPreference, ChatSession session,
+            Logger logger, Action<object> bugtrackerReport)
         {
-            this.BrowserController = new BrowserController(sessionPreference.Mod);
+            this.BrowserController = new BrowserController(sessionPreference.Mod, logger);
+            this.BrowserController.PropertyChanged += (sender, args) =>
+            {
+                if (args.PropertyName == nameof(this.BrowserController.BrowserBanState))
+                    this.BrowserBanState = this.BrowserController.BrowserBanState;
+            };
             this._repository = repository;
             this._sessionPreference = sessionPreference;
             this._session = session;
-            this.ChatConnections = new ObservableCollection<ChatConnection>(this._session.ChatConnections);
-            for (var i = 0; i < this.ChatConnections.Count; i++)
+            this._logger = logger;
+            this._bugtrackerReport = bugtrackerReport;
+            this.ChatConnections = new ObservableCollection<ChatConnection>();
+
+            for (var i = 0; i < session.ChatConnections.Count; i++)
+            {
                 this.ChatConnectionInfos.Add(new ChatConnectionInfo(i + 1));
+                this.ChatConnections.Add(session.ChatConnections[i]);
+            }
+
             var sessionThread = new Thread(this.SessionTick)
             {
                 Name = $"Session #{session.Id}",
@@ -61,6 +75,21 @@ namespace ChatRoulette.Core.Session
         private void SessionTick()
         {
             this.StartRecord();
+
+            var currentSessionPath = this.GetCurrentSessionPath();
+            if (LogManager.Configuration.FindTargetByName("logfile") is FileTarget target)
+            {
+                target.FileName = Path.Combine(currentSessionPath, "log.data");
+                LogManager.ReconfigExistingLoggers();
+            }
+
+            var json = JsonConvert.SerializeObject(this._sessionPreference);
+            this.Ip = InetUtils.GetMyIp();
+
+            this._logger.Info("Session started");
+            this._logger.Trace($"User public IP: {this.Ip}");
+            this._logger.Trace($"Session preferences:{Environment.NewLine}{json}");
+
             var statusText = "";
             while (true)
             {
@@ -75,15 +104,21 @@ namespace ChatRoulette.Core.Session
                         return;
                     }
 
-                    if (this.UpdateStatus(ref statusText))
+
+                    var newStatusText = this.BrowserController.GetStatus().GetAwaiter().GetResult();
+                    if (newStatusText != null && statusText != newStatusText)
                     {
+                        statusText = newStatusText;
+                        this.Status = ChatRouletteStatusParser.Parse(statusText);
                         this.UpdateConnectionInfo(this.Status);
                         this.UpdateBrowserView(this.Status);
                     }
                 }
                 catch (Exception ex)
                 {
-                    LogManager.GetCurrentClassLogger().Error($"Unhandled SessionTick Exception {Environment.NewLine}{ex}");
+                    this._bugtrackerReport(ex);
+                    LogManager.GetCurrentClassLogger()
+                        .Error($"Unhandled SessionTick Exception {Environment.NewLine}{ex}");
                 }
             }
         }
@@ -95,6 +130,7 @@ namespace ChatRoulette.Core.Session
                 var id = this.ChatConnectionInfos.Count + 1;
                 this.CurrentConnectionInfo = new ChatConnectionInfo(id);
                 this.ChatConnectionInfos.Add(this.CurrentConnectionInfo);
+                this.BanState = false;
             }
             else
             {
@@ -112,58 +148,84 @@ namespace ChatRoulette.Core.Session
                 case Status.EnableCamera:
                 case Status.Start:
                 case Status.PartnerConnected:
-                    this.BrowserController.HidePartnerInfo().GetAwaiter().GetResult();
-                    this.BrowserController.ShowPartner().GetAwaiter().GetResult();
+                    if (!this.EventProcessingStarted)
+                    {
+                        this.BrowserController.HidePartnerInfo().GetAwaiter().GetResult();
+                        this.BrowserController.ShowPartner().GetAwaiter().GetResult();
+                    }
                     break;
                 default:
                     this.BrowserController.HidePartner().GetAwaiter().GetResult();
+                    this.EventProcessingStarted = false;
                     break;
             }
-        }
-
-        private bool UpdateStatus(ref string statusText)
-        {
-            var newStatusText = this.BrowserController.GetStatus().GetAwaiter().GetResult();
-
-            if (newStatusText != null && statusText != newStatusText)
-            {
-                statusText = newStatusText;
-                this.Status = ChatRouletteStatusParser.Parse(statusText);
-                return true;
-            }
-
-            return false;
         }
 
         public async Task<ChatConnectionResultEnum?> KeyDown(Key key)
         {
+            if (!this.EventProcessingStarted)
+                this.EventProcessingStarted = true;
+            var swGlobal = Stopwatch.StartNew();
+            var swLocal = Stopwatch.StartNew();
+            this._logger.Trace($"Event KeyDown received: {key}");
+
             if (key == Key.F5)
             {
+                this._logger.Trace($"Start page reload");
                 await this.BrowserController.RefreshPage();
+                this._logger.Trace($"Page reloaded in {swLocal.Elapsed}");
+                this.EventProcessingStarted = false;
                 return null;
             }
 
             if (this.Status != Status.PartnerConnected)
+            {
+                this.EventProcessingStarted = false;
                 return null;
+            }
 
             if (!this._sessionPreference.KeyToResultBinds.ContainsKey(key))
+            {
+                this.EventProcessingStarted = false;
                 return null;
+            }
+
             if (this.CurrentConnectionInfo.Handled)
+            {
+                this.EventProcessingStarted = false;
                 return null;
+            }
 
             this.CurrentConnectionInfo.DateEnd = DateTime.Now;
             this.CurrentConnectionInfo.Handled = true;
-
             var result = this._sessionPreference.KeyToResultBinds[key];
+
+            this._logger.Trace($"{result} assigned to connection in {swLocal.Elapsed}");
+            swLocal.Restart();
+
             this.MakeScreenShoot(result);
-            var res = await this._repository.AddResultAsync(this._session, result, "");
-            this.ChatConnections.Add(res);
-            this.OnPropertyChanged(nameof(this.ChatConnections));
+            this._logger.Trace($"Screenshoot taked in {swLocal.Elapsed}");
+            swLocal.Restart();
+            //this.BrowserController.HidePartner().GetAwaiter().GetResult();
+            //this._logger.Trace($"Hide  taked in {swLocal.Elapsed}");
+            //swLocal.Restart();
+
+            await Task.Run(() =>
+            {
+                var res = this._repository.AddResultAsync(this._session, result, "").GetAwaiter().GetResult();
+                this.ChatConnections.Add(res);
+                this.OnPropertyChanged(nameof(this.ChatConnections));
+                this._logger.Trace($"Result saved in {swLocal.Elapsed}");
+                swLocal.Restart();
+            });
 
             if (this._sessionPreference.WithBan && (result == ChatConnectionResultEnum.Inappropriate ||
                                                     result == ChatConnectionResultEnum.HiddenInappropriate))
             {
-                await this.BrowserController.BanPartner();
+                this.BanState = true;
+                await Task.Run(() => { this.BrowserController.BanPartner(); });
+                this._logger.Trace($"Partner banned in {swLocal.Elapsed}");
+                swLocal.Restart();
                 return result;
             }
 
@@ -171,23 +233,32 @@ namespace ChatRoulette.Core.Session
                                                        result == ChatConnectionResultEnum.Spam2 ||
                                                        result == ChatConnectionResultEnum.Spam3))
             {
-                await this.BrowserController.ReportPartner();
+                await Task.Run(() => { this.BrowserController.ReportPartner(); });
+                this._logger.Trace($"Partner reported in {swLocal.Elapsed}");
+                swLocal.Restart();
                 return result;
             }
 
-            await this.BrowserController.NextPartner();
+            await Task.Run(() =>
+            {
+                this.BrowserController.NextPartner();
+            });
+            this._logger.Trace($"Partner skipped in {swLocal.Elapsed}");
+            swLocal.Restart();
+            swGlobal.Stop();
+            this._logger.Info($"Event KeyDown processed in {swGlobal.Elapsed}");
             return result;
         }
 
         private void MakeScreenShoot(ChatConnectionResultEnum folderType)
         {
-            var pngImage = this.BrowserController.GetBrowserScreenShot();
+            var image = this.BrowserController.GetBrowserScreenShot(new JpegBitmapEncoder());
             var path = this.GetCurrentSessionPathWithResult(folderType.ToString());
-            var fileName = Path.Combine(path, $"{this.ChatConnections.Count(x => x.Result == folderType) + 1}.png");
+            var fileName = Path.Combine(path, $"{this.ChatConnections.Count(x => x.Result == folderType) + 1}.jpg");
 
             using (Stream fileStream = File.Create(fileName))
             {
-                pngImage.Save(fileStream);
+                image.Save(fileStream);
             }
         }
 
@@ -195,6 +266,12 @@ namespace ChatRoulette.Core.Session
         {
             try
             {
+                if (LogManager.Configuration.FindTargetByName("logfile") is FileTarget target)
+                {
+                    target.FileName = Path.Combine(Environment.CurrentDirectory, "log.data");
+                    LogManager.ReconfigExistingLoggers();
+                }
+
                 this.BrowserController.Stop();
                 this.StopRecord();
                 var session = this._repository.CloseSessionAsync(this._session).GetAwaiter().GetResult();
@@ -203,6 +280,7 @@ namespace ChatRoulette.Core.Session
             }
             catch (Exception ex)
             {
+                this._bugtrackerReport(ex);
                 LogManager.GetCurrentClassLogger().Error($"Unhandled StopSession {Environment.NewLine}{ex}");
             }
         }
@@ -226,7 +304,14 @@ namespace ChatRoulette.Core.Session
         private void StartRecord()
         {
             var path = this.GetCurrentSessionPath();
-            var fileName = Path.Combine(path, "screenRecord.avi");
+            var fileName = "";
+            for (var i = 0; i < 100; i++)
+            {
+                fileName = Path.Combine(path, $"screenRecord_{i}.avi");
+                if (!File.Exists(fileName))
+                    break;
+            }
+
             this._recorder = new Recorder(new RecorderParams(fileName, 6, RecorderCodecs.Xvid, 50));
         }
 
@@ -261,6 +346,56 @@ namespace ChatRoulette.Core.Session
             set
             {
                 this._sessionLeftTime = value;
+                this.OnPropertyChanged();
+            }
+        }
+
+        public BrowserController BrowserController
+        {
+            get => this._browserController;
+            set
+            {
+                this._browserController = value;
+                this.OnPropertyChanged();
+            }
+        }
+
+        public string Ip
+        {
+            get => this._ip;
+            set
+            {
+                this._ip = value;
+                this.OnPropertyChanged();
+            }
+        }
+
+        public bool BrowserBanState
+        {
+            get => this._browserBanState;
+            set
+            {
+                this._browserBanState = value;
+                this.OnPropertyChanged();
+            }
+        }
+
+        public bool BanState
+        {
+            get => this._banState;
+            set
+            {
+                this._banState = value;
+                this.OnPropertyChanged();
+            }
+        }
+
+        public bool EventProcessingStarted
+        {
+            get => this._eventProcessingStarted;
+            set
+            {
+                this._eventProcessingStarted = value;
                 this.OnPropertyChanged();
             }
         }

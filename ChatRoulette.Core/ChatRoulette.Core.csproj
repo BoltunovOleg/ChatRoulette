@@ -67,6 +67,9 @@
     <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <HintPath>..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.SqlServer.dll</HintPath>
     </Reference>
+    <Reference Include="Exort.GithubBugtracker, Version=1.0.5.20144, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Exort.GithubBugtracker.1.0.5\lib\net48\Exort.GithubBugtracker.dll</HintPath>
+    </Reference>
     <Reference Include="Google.Apis, Version=1.45.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
       <HintPath>..\packages\Google.Apis.1.45.0\lib\net45\Google.Apis.dll</HintPath>
     </Reference>
@@ -108,6 +111,9 @@
     </Reference>
     <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
       <HintPath>..\packages\NLog.4.7.1\lib\net45\NLog.dll</HintPath>
+    </Reference>
+    <Reference Include="Octokit, Version=0.47.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Octokit.0.47.0\lib\net46\Octokit.dll</HintPath>
     </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
@@ -171,6 +177,7 @@
     <Compile Include="Session\SessionEndEventHandler.cs" />
     <Compile Include="Session\SessionPreference.cs" />
     <Compile Include="Settings\SettingsService.cs" />
+    <Compile Include="Utils\InetUtils.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
@@ -182,6 +189,7 @@
       <Name>ChatRoulette.Repository</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

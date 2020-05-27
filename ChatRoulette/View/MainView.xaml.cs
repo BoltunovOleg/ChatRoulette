@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using ChatRoulette.Ioc;
@@ -23,7 +24,8 @@ namespace ChatRoulette.View
 
         private void DarkModeToggleButton_OnClick(object sender, RoutedEventArgs e)
         {
-            ModifyTheme(theme => theme.SetBaseTheme(this.DarkModeToggleButton.IsChecked == true ? Theme.Dark : Theme.Light));
+            ModifyTheme(theme =>
+                theme.SetBaseTheme(this.DarkModeToggleButton.IsChecked == true ? Theme.Dark : Theme.Light));
         }
 
         private static void ModifyTheme(Action<ITheme> modificationAction)
@@ -38,7 +40,6 @@ namespace ChatRoulette.View
 
         private void ButtonExit_OnClick(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("test_6");
             this.Close();
         }
 
@@ -48,7 +49,8 @@ namespace ChatRoulette.View
             {
                 if (bvm.RedirectInput)
                 {
-                    e.Handled = await bvm.KeyDown(e.Key);
+                    e.Handled = true;
+                    await bvm.KeyDown(e.Key);
                 }
             }
         }
@@ -59,7 +61,8 @@ namespace ChatRoulette.View
             {
                 if (bvm.RedirectInput)
                 {
-                    e.Handled = await bvm.KeyUp(e.Key);
+                    e.Handled = true;
+                    await bvm.KeyUp(e.Key);
                 }
             }
         }
