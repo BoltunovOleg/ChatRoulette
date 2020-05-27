@@ -27,7 +27,7 @@ namespace ChatRoulette.ViewModel
                 this.OnPropertyChanging();
                 this._isLoading = value;
                 this.OnPropertyChanged();
-                if (value)
+                if (value && !this._bwLoadingTimer.IsBusy)
                     this._bwLoadingTimer.RunWorkerAsync();
             }
         }
