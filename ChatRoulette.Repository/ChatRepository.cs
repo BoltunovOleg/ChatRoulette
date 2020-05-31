@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.Entity;
+using System.Linq;
 using System.Threading.Tasks;
 using ChatRoulette.Repository.Exceptions;
 using ChatRoulette.Repository.Model;
@@ -17,9 +18,14 @@ namespace ChatRoulette.Repository
         {
         }
 
-        public async Task<List<ChatSession>> GetAllSession()
+        public async Task<List<ChatSession>> GetAllSessions()
         {
             return await this.ChatSessions.ToListAsync();
+        }
+
+        public async Task<List<ChatSession>> GetUserSessions(int id)
+        {
+            return await this.ChatSessions.Where(x => x.UserNumber == id).Include(x=> x.ChatConnections).ToListAsync();
         }
 
         public async Task<ChatSession> GetSession(int id)

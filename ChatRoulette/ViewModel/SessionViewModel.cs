@@ -128,7 +128,7 @@ namespace ChatRoulette.ViewModel
             switch (e.PropertyName)
             {
                 case nameof(this._sessionController.EventProcessingStarted):
-                    this.ResultSending = this._sessionController.EventProcessingStarted;
+                    //this.ResultSending = this._sessionController.EventProcessingStarted;
                     break;
                 case nameof(this._sessionController.Ip):
                 case nameof(this._sessionController.BanState):
@@ -180,7 +180,7 @@ namespace ChatRoulette.ViewModel
             var bw = sender as BackgroundWorker;
             while (this.IsLoading || this.ResultSending)
             {
-                Thread.Sleep(50);
+                Thread.Sleep(500);
                 this.Info = sw.Elapsed.ToString();
             }
 

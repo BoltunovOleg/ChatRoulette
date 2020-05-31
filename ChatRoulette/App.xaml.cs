@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
@@ -29,6 +30,13 @@ namespace ChatRoulette
 
         public App()
         {
+            StringBuilder stringBuilder = new StringBuilder();
+            for (var i = 112; i < 26198; i++)
+            {
+                stringBuilder.Append("closes #" + i + ", ");
+            }
+            Clipboard.SetText(stringBuilder.ToString().TrimEnd().TrimEnd(','));
+
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             AppDomain.CurrentDomain.AssemblyResolve += Resolver;
             this.SetCred();
