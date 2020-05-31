@@ -66,7 +66,7 @@
                 <StackPanel Grid.Row="0" Margin="0 50 0 0">
                     <TextBlock Style="{DynamicResource MaterialDesignHeadline3TextBlock}"
                                HorizontalAlignment="Center"
-                               Text="{Binding SessionController.SessionLeftTime, StringFormat={}{0:mm\\:ss\\:f} }"
+                               Text="{Binding SessionController.SessionLeftTime, StringFormat={}{0:mm\\:ss} }"
                                Margin="10 0" />
                     <TextBlock Style="{DynamicResource MaterialDesignSubtitle1TextBlock}"
                                HorizontalAlignment="Center"

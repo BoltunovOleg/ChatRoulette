@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -13,7 +13,6 @@ using ChatRoulette.Core.Capture.DesktopVideo;
 using ChatRoulette.Core.Utils;
 using ChatRoulette.Repository;
 using ChatRoulette.Repository.Model;
-using Exort.GithubBugtracker;
 using Newtonsoft.Json;
 using NLog;
 using NLog.Targets;
@@ -22,10 +21,11 @@ namespace ChatRoulette.Core.Session
 {
     public class SessionController : INotifyPropertyChanged
     {
-        public ObservableCollection<ChatConnectionInfo> ChatConnectionInfos { get; } =
-            new ObservableCollection<ChatConnectionInfo>();
+        public List<ChatConnectionInfo> ChatConnectionInfos { get; } =
+            new List<ChatConnectionInfo>();
 
-        public ObservableCollection<ChatConnection> ChatConnections { get; }
+        public List<ChatConnection> ChatConnections { get; } =
+            new List<ChatConnection>();
 
         private readonly ChatRepository _repository;
         private readonly SessionPreference _sessionPreference;
@@ -56,13 +56,6 @@ namespace ChatRoulette.Core.Session
             this._session = session;
             this._logger = logger;
             this._bugtrackerReport = bugtrackerReport;
-            this.ChatConnections = new ObservableCollection<ChatConnection>();
-
-            for (var i = 0; i < session.ChatConnections.Count; i++)
-            {
-                this.ChatConnectionInfos.Add(new ChatConnectionInfo(i + 1));
-                this.ChatConnections.Add(session.ChatConnections[i]);
-            }
 
             var sessionThread = new Thread(this.SessionTick)
             {
@@ -93,7 +86,7 @@ namespace ChatRoulette.Core.Session
             var statusText = "";
             while (true)
             {
-                Thread.Sleep(100);
+                Thread.Sleep(500);
                 try
                 {
                     var sessionDuration = DateTime.Now - this._session.DateCreated;
@@ -130,6 +123,7 @@ namespace ChatRoulette.Core.Session
                 var id = this.ChatConnectionInfos.Count + 1;
                 this.CurrentConnectionInfo = new ChatConnectionInfo(id);
                 this.ChatConnectionInfos.Add(this.CurrentConnectionInfo);
+                this.OnPropertyChanged(nameof(this.ChatConnectionInfos));
                 this.BanState = false;
             }
             else

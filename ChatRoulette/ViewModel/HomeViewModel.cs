@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data.Entity;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -15,7 +14,8 @@ namespace ChatRoulette.ViewModel
         private readonly ChatRepository _repository;
         private List<ChatSession> _sessions = new List<ChatSession>();
         private bool _isLoading;
-        private BackgroundWorker _bwLoadingTimer = new BackgroundWorker();
+        private readonly BackgroundWorker _bwLoadingTimer = new BackgroundWorker();
+        private readonly BackgroundWorker _bwUpdater = new BackgroundWorker();
 
         public override string MenuCaption { get; } = "Главная";
 
@@ -50,6 +50,8 @@ namespace ChatRoulette.ViewModel
         {
             this._repository = repository;
             this._bwLoadingTimer.DoWork += this.BwLoadingTimerOnDoWork;
+            this._bwUpdater.DoWork += this.BackgroundWorkerOnDoWork;
+            this._bwUpdater.RunWorkerCompleted += this.BackgroundWorkerOnRunWorkerCompleted;
             this.ReloadData();
         }
 
@@ -58,7 +60,7 @@ namespace ChatRoulette.ViewModel
             var sw = Stopwatch.StartNew();
             while (this.IsLoading)
             {
-                Thread.Sleep(50);
+                Thread.Sleep(500);
                 this.Info = sw.Elapsed.ToString();
             }
 
@@ -73,21 +75,27 @@ namespace ChatRoulette.ViewModel
 
         private void ReloadData()
         {
-            this.IsLoading = true;
-            var backgroundWorker = new BackgroundWorker();
-            backgroundWorker.DoWork += this.BackgroundWorkerOnDoWork;
-            backgroundWorker.RunWorkerAsync();
+            if (!this.IsLoading && !this._bwUpdater.IsBusy)
+            {
+                this.IsLoading = true;
+                this._bwUpdater.RunWorkerAsync();
+            }
+        }
+
+        private void BackgroundWorkerOnRunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            if (e.Result is List<ChatSession> sessions)
+            {
+                this.Sessions = sessions;
+            }
+            this.IsLoading = false;
         }
 
         private async void BackgroundWorkerOnDoWork(object sender, DoWorkEventArgs e)
         {
             var userId = this.SettingsService.Settings.UserId;
-            this.Sessions = await this._repository.ChatSessions
-                .Include(x => x.ChatConnections)
-                .Where(x => x.UserNumber == userId)
-                .OrderByDescending(x => x.DateStart)
-                .ToListAsync();
-            this.IsLoading = false;
+            var sessions = await this._repository.GetUserSessions(userId);
+            e.Result = sessions.OrderByDescending(x => x.DateStart).ToList();
         }
     }
 }

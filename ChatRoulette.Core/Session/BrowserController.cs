@@ -57,6 +57,8 @@ namespace ChatRoulette.Core.Session
             this._browser.ConsoleMessage +=
                 (sender, args) =>
                 {
+                    if (args.Message == "Couldn't fetch stats due to GetStats is not possible: OT.Subscriber is not connected cannot getStats")
+                        return;
                     this._logger.Trace($"Browser console message: {args.Message}");
                     if (args.Message.Contains("partner banned by moderator"))
                         this.BrowserBanState = true;
