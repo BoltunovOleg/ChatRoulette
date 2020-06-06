@@ -2,7 +2,6 @@
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -18,6 +17,7 @@ namespace ChatRoulette.Core.Session
         private bool _isFirstLoading = true;
         private ChromiumWebBrowser _browser;
         private bool _browserBanState;
+        private Status _status;
 
         public BrowserController(string mod, Logger logger)
         {
@@ -64,6 +64,15 @@ namespace ChatRoulette.Core.Session
                         this.BrowserBanState = true;
                     if (args.Message.Contains("Stream started"))
                         this.BrowserBanState = false;
+                    
+                    if (args.Message.Contains("Client is now ready to begin."))
+                        this.Status = Status.EnableCamera;
+                    if (args.Message.Contains("Setup publisher and camera turned on"))
+                        this.Status = Status.Start;
+                    if (args.Message.Contains("Setup subscriber -success"))
+                        this.Status = Status.PartnerConnected;
+                    if (args.Message.Contains("partner skipped") || args.Message.Contains("partner banned by moderator"))
+                        this.Status = Status.PutResult;
                 };
 
             this._browser.LoadingStateChanged += this.ChromeBrowserOnLoadingStateChanged;
@@ -266,6 +275,16 @@ namespace ChatRoulette.Core.Session
             set
             {
                 this._browserBanState = value;
+                this.OnPropertyChanged();
+            }
+        }
+
+        public Status Status
+        {
+            get => this._status;
+            set
+            {
+                this._status = value;
                 this.OnPropertyChanged();
             }
         }
