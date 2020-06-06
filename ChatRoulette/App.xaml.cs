@@ -26,17 +26,11 @@ namespace ChatRoulette
         public static GithubBugtracker Bugtracker => IocKernel.Get<GithubBugtracker>();
         public static bool IsDebug { get; private set; }
         public static bool IsConsole { get; private set; }
+        public static bool NoUpdate { get; private set; }
         public static Credentials GtCredentials;
 
         public App()
         {
-            StringBuilder stringBuilder = new StringBuilder();
-            for (var i = 112; i < 26198; i++)
-            {
-                stringBuilder.Append("closes #" + i + ", ");
-            }
-            Clipboard.SetText(stringBuilder.ToString().TrimEnd().TrimEnd(','));
-
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             AppDomain.CurrentDomain.AssemblyResolve += Resolver;
             this.SetCred();
@@ -45,13 +39,16 @@ namespace ChatRoulette
             Current.DispatcherUnhandledException += this.CurrentOnDispatcherUnhandledException;
             AppDomain.CurrentDomain.UnhandledException += this.CurrentDomainOnUnhandledException;
 
-            var autoUpdater = new AutoUpdater("BoltunovOleg", "ChatRoulette", Assembly.GetExecutingAssembly());
-            var t = autoUpdater.CheckUpdate().GetAwaiter().GetResult();
-            if (t)
+            if (!NoUpdate)
             {
-                var release = autoUpdater.GetLatestRelease().GetAwaiter().GetResult();
-                autoUpdater.ShowReleaseInfo(release);
-                App.Current.Shutdown(0);
+                var autoUpdater = new AutoUpdater("BoltunovOleg", "ChatRoulette", Assembly.GetExecutingAssembly());
+                var t = autoUpdater.CheckUpdate().GetAwaiter().GetResult();
+                if (t)
+                {
+                    var release = autoUpdater.GetLatestRelease().GetAwaiter().GetResult();
+                    autoUpdater.ShowReleaseInfo(release);
+                    App.Current.Shutdown(0);
+                }
             }
 
             LogMachineDetails();
@@ -66,6 +63,7 @@ namespace ChatRoulette
             base.OnStartup(e);
             IsDebug = e.Args.Contains("debug");
             IsConsole = e.Args.Contains("console");
+            NoUpdate = e.Args.Contains("noupdate");
 
             if (IsConsole && !ConsoleManager.HasConsole)
                 ConsoleManager.Show();
@@ -81,6 +79,7 @@ namespace ChatRoulette
                 {
                     SendBugReport("Время сессии менее 29 минут");
                 }
+
                 if (sessionPreference.Mod == "0")
                 {
                     sessionPreference.WithBan = true;
@@ -125,9 +124,9 @@ namespace ChatRoulette
                 var settingsService = IocKernel.Get<SettingsService>();
                 if (settingsService?.Settings != null)
                     userId = settingsService.Settings.UserId;
-                await Bugtracker.CreateIssue("BoltunovOleg", "ChatRoulette", "Unhandled exception",
-                    $"UserId: {userId}{Environment.NewLine}" +
-                    $"{JsonConvert.SerializeObject(obj)}");
+                File.WriteAllText(
+                    Path.Combine(Environment.CurrentDirectory, $"crash_{DateTime.Now:dd.MM.yyyy HH:mm:ss}.data"),
+                    $"UserId: {userId}{Environment.NewLine}{JsonConvert.SerializeObject(obj)}");
             }
             catch (Exception ex)
             {
