@@ -141,16 +141,18 @@ namespace ChatRoulette.Core.Session
             {
                 case Status.EnableCamera:
                 case Status.Start:
+                case Status.Wait:
+                    break;
                 case Status.PartnerConnected:
                     if (!this.EventProcessingStarted)
                     {
-                        this.BrowserController.HidePartnerInfo().GetAwaiter().GetResult();
-                        this.BrowserController.ShowPartner().GetAwaiter().GetResult();
+                        this.BrowserController.HidePartnerInfo();
+                        this.BrowserController.ShowPartner();
                     }
 
                     break;
                 default:
-                    this.BrowserController.HidePartner().GetAwaiter().GetResult();
+                    this.BrowserController.HidePartner();
                     this.EventProcessingStarted = false;
                     break;
             }
@@ -202,7 +204,6 @@ namespace ChatRoulette.Core.Session
             this._logger.Trace($"Screenshoot taked in {swLocal.Elapsed}");
             swLocal.Restart();
 
-            Task task;
             var action = "skipped";
 
             if (this._sessionPreference.WithBan && (result == ChatConnectionResultEnum.Inappropriate ||
@@ -210,7 +211,7 @@ namespace ChatRoulette.Core.Session
             {
                 this.BanState = true;
                 action = "banned";
-                task = new Task(() => { this.BrowserController.BanPartner(); });
+                this.BrowserController.BanPartner();
             }
             else
             {
@@ -219,19 +220,15 @@ namespace ChatRoulette.Core.Session
                                                            result == ChatConnectionResultEnum.Spam3))
                 {
                     action = "reported";
-                    task = new Task(() =>
-                    {
                         this.BrowserController.ReportPartner();
                         this.BrowserController.NextPartner();
-                    });
                 }
                 else
                 {
-                    task = new Task(() => { this.BrowserController.NextPartner(); });
+                    
+                    this.BrowserController.NextPartner();
                 }
             }
-
-            task.GetAwaiter().GetResult();
 
             this._logger.Trace($"Partner {action} in {swLocal.Elapsed}");
             swLocal.Restart();
@@ -389,6 +386,8 @@ namespace ChatRoulette.Core.Session
                 this.OnPropertyChanged();
             }
         }
+
+        public ChatSession Session => this._session;
 
         public event PropertyChangedEventHandler PropertyChanged;
         public event SessionEndEventHandler SessionEnd;

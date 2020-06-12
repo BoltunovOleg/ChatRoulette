@@ -25,8 +25,6 @@ namespace ChatRoulette.Converters
                     case Status.PartnerConnected:
                     case Status.PutResult:
                         return this.FalseValue;
-                    default:
-                        return this.TrueValue;
                 }
             }
             return this.FalseValue;

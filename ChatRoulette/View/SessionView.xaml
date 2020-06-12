@@ -45,7 +45,7 @@
         <ContentControl Grid.Row="0" Grid.Column="0" Content="{Binding SessionController.BrowserController.Browser}" />
         <TextBlock Grid.Row="0" Grid.Column="0" Text="Ждем подключения..." HorizontalAlignment="Center"
                    VerticalAlignment="Center"
-                   Visibility="{Binding SessionController.Status, Converter={StaticResource StatusToVisibilityConverter}}" />
+                   Visibility="{Binding SessionController.BrowserController.Status, Converter={StaticResource StatusToVisibilityConverter}}" />
 
         <Border Grid.Row="0" Grid.Column="0" Background="{DynamicResource MaterialDesignPaper}"
                 Visibility="{Binding ResultSending, Converter={StaticResource InverseBoolConverter}}">
@@ -72,7 +72,7 @@
                                HorizontalAlignment="Center"
                                TextWrapping="Wrap"
                                Margin="10 0"
-                               Text="{Binding SessionController.Status}" />
+                               Text="{Binding SessionController.BrowserController.Status}" />
                     <TextBlock Style="{DynamicResource MaterialDesignSubtitle1TextBlock}"
                                HorizontalAlignment="Center"
                                TextWrapping="Wrap"

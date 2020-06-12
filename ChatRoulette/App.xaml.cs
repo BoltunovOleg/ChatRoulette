@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -6,9 +7,12 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Threading;
+using ChatRoulette.Core.Session;
 using ChatRoulette.Core.Settings;
 using ChatRoulette.Ioc;
+using ChatRoulette.Repository.Model;
 using ChatRoulette.Utils;
 using Exort.AutoUpdate.Wpf;
 using Exort.GithubBugtracker;
@@ -39,18 +43,6 @@ namespace ChatRoulette
             Current.DispatcherUnhandledException += this.CurrentOnDispatcherUnhandledException;
             AppDomain.CurrentDomain.UnhandledException += this.CurrentDomainOnUnhandledException;
 
-            if (!NoUpdate)
-            {
-                var autoUpdater = new AutoUpdater("BoltunovOleg", "ChatRoulette", Assembly.GetExecutingAssembly());
-                var t = autoUpdater.CheckUpdate().GetAwaiter().GetResult();
-                if (t)
-                {
-                    var release = autoUpdater.GetLatestRelease().GetAwaiter().GetResult();
-                    autoUpdater.ShowReleaseInfo(release);
-                    App.Current.Shutdown(0);
-                }
-            }
-
             LogMachineDetails();
             var settingsService = IocKernel.Get<SettingsService>();
             var path = Path.Combine(Environment.CurrentDirectory, SettingsPath);
@@ -58,15 +50,28 @@ namespace ChatRoulette
             this.FixPreferences();
         }
 
-        protected override void OnStartup(StartupEventArgs e)
+        protected override async void OnStartup(StartupEventArgs e)
         {
-            base.OnStartup(e);
             IsDebug = e.Args.Contains("debug");
             IsConsole = e.Args.Contains("console");
             NoUpdate = e.Args.Contains("noupdate");
 
             if (IsConsole && !ConsoleManager.HasConsole)
                 ConsoleManager.Show();
+
+            if (!NoUpdate)
+            {
+                var autoUpdater = new AutoUpdater("BoltunovOleg", "ChatRoulette", Assembly.GetExecutingAssembly());
+                var t = await autoUpdater.CheckUpdate();
+                if (t)
+                {
+                    var release = await autoUpdater.GetLatestRelease();
+                    autoUpdater.ShowReleaseInfo(release);
+                    App.Current.Shutdown(0);
+                }
+            }
+
+            base.OnStartup(e);
         }
 
         private void FixPreferences()
@@ -90,6 +95,53 @@ namespace ChatRoulette
                     sessionPreference.WithBan = false;
                     sessionPreference.WithReport = false;
                 }
+            }
+
+            if (service.Settings.SessionPreferences.All(x => x.Name != "Like USER"))
+            {
+                var newPref = new SessionPreference
+                {
+                    Mod = "-1",
+                    Name = "Like USER",
+                    WorkTime = TimeSpan.FromMinutes(55),
+                    WithBan = false,
+                    WithReport = false,
+                    AllowedResults = new List<ChatConnectionResultEnum>
+                    {
+                        ChatConnectionResultEnum.Male,
+                        ChatConnectionResultEnum.Female,
+                        ChatConnectionResultEnum.OnePlus,
+                        ChatConnectionResultEnum.Nobody,
+                        ChatConnectionResultEnum.Age13,
+                        ChatConnectionResultEnum.Age16,
+                        ChatConnectionResultEnum.Text,
+                        ChatConnectionResultEnum.Inappropriate,
+                        ChatConnectionResultEnum.HiddenInappropriate,
+                        ChatConnectionResultEnum.Spam1,
+                        ChatConnectionResultEnum.Spam2,
+                        ChatConnectionResultEnum.Spam3,
+                        ChatConnectionResultEnum.PartnerDisconnected
+                    },
+                    KeyToResultBinds = new Dictionary<Key, ChatConnectionResultEnum>
+                    {
+                        {Key.W, ChatConnectionResultEnum.Male},
+                        {Key.F, ChatConnectionResultEnum.Female},
+                        {Key.A, ChatConnectionResultEnum.OnePlus},
+                        {Key.S, ChatConnectionResultEnum.Nobody},
+                        {Key.Space, ChatConnectionResultEnum.Inappropriate},
+                        {Key.D, ChatConnectionResultEnum.HiddenInappropriate},
+
+                        {Key.C, ChatConnectionResultEnum.Text},
+
+                        {Key.Q, ChatConnectionResultEnum.Age13},
+                        {Key.E, ChatConnectionResultEnum.Age16},
+
+                        {Key.Left, ChatConnectionResultEnum.Spam1},
+                        {Key.Up, ChatConnectionResultEnum.Spam2},
+                        {Key.Right, ChatConnectionResultEnum.Spam3},
+                    }
+                };
+                service.Settings.SessionPreferences.Add(newPref);
             }
         }
 
@@ -125,7 +177,7 @@ namespace ChatRoulette
                 if (settingsService?.Settings != null)
                     userId = settingsService.Settings.UserId;
                 File.WriteAllText(
-                    Path.Combine(Environment.CurrentDirectory, $"crash_{DateTime.Now:dd.MM.yyyy HH:mm:ss}.data"),
+                    Path.Combine(Environment.CurrentDirectory, $"crash_{DateTime.Now:dd_MM_yyyy_HH_mm_ss}.data"),
                     $"UserId: {userId}{Environment.NewLine}{JsonConvert.SerializeObject(obj)}");
             }
             catch (Exception ex)

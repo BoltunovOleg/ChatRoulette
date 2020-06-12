@@ -196,7 +196,7 @@ namespace ChatRoulette.Core.Settings
                     Mod = "0",
                     Name = "Bannable",
                     WorkTime = TimeSpan.FromMinutes(55),
-                    WithBan = false,
+                    WithBan = true,
                     WithReport = false,
                     AllowedResults = new List<ChatConnectionResultEnum>
                     {
@@ -208,6 +208,48 @@ namespace ChatRoulette.Core.Settings
                     {
                         {Key.D1, ChatConnectionResultEnum.Inappropriate},
                         {Key.D2, ChatConnectionResultEnum.Anyone},
+                    }
+                },
+                new SessionPreference
+                {
+                    Mod = "-1",
+                    Name = "Like USER",
+                    WorkTime = TimeSpan.FromMinutes(55),
+                    WithBan = false,
+                    WithReport = false,
+                    AllowedResults = new List<ChatConnectionResultEnum>
+                    {
+                        ChatConnectionResultEnum.Male,
+                        ChatConnectionResultEnum.Female,
+                        ChatConnectionResultEnum.OnePlus,
+                        ChatConnectionResultEnum.Nobody,
+                        ChatConnectionResultEnum.Age13,
+                        ChatConnectionResultEnum.Age16,
+                        ChatConnectionResultEnum.Text,
+                        ChatConnectionResultEnum.Inappropriate,
+                        ChatConnectionResultEnum.HiddenInappropriate,
+                        ChatConnectionResultEnum.Spam1,
+                        ChatConnectionResultEnum.Spam2,
+                        ChatConnectionResultEnum.Spam3,
+                        ChatConnectionResultEnum.PartnerDisconnected
+                    },
+                    KeyToResultBinds = new Dictionary<Key, ChatConnectionResultEnum>
+                    {
+                        {Key.W, ChatConnectionResultEnum.Male},
+                        {Key.F, ChatConnectionResultEnum.Female},
+                        {Key.A, ChatConnectionResultEnum.OnePlus},
+                        {Key.S, ChatConnectionResultEnum.Nobody},
+                        {Key.Space, ChatConnectionResultEnum.Inappropriate},
+                        {Key.D, ChatConnectionResultEnum.HiddenInappropriate},
+
+                        {Key.C, ChatConnectionResultEnum.Text},
+
+                        {Key.Q, ChatConnectionResultEnum.Age13},
+                        {Key.E, ChatConnectionResultEnum.Age16},
+
+                        {Key.Left, ChatConnectionResultEnum.Spam1},
+                        {Key.Up, ChatConnectionResultEnum.Spam2},
+                        {Key.Right, ChatConnectionResultEnum.Spam3},
                     }
                 }
             };

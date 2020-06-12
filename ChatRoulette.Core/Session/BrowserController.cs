@@ -42,16 +42,19 @@ namespace ChatRoulette.Core.Session
                 Cef.Initialize(cefSettings, performDependencyCheck: false, browserProcessHandler: null);
             }
 
-            var m = mod;
-            if (mod != "0")
+            if (mod != "-1")
             {
-                Cef.GetGlobalCookieManager().SetCookie("https://chatroulette.com",
-                    new Cookie() {Path = "/", Domain = "chatroulette.com", Name = "counter", Value = mod});
-                m = "-100";
-            }
+                var m = mod;
+                if (mod != "0")
+                {
+                    Cef.GetGlobalCookieManager().SetCookie("https://chatroulette.com",
+                        new Cookie() {Path = "/", Domain = "chatroulette.com", Name = "counter", Value = mod});
+                    m = "-100";
+                }
 
-            Cef.GetGlobalCookieManager().SetCookie("https://chatroulette.com",
-                new Cookie() {Path = "/", Domain = "chatroulette.com", Name = "mod", Value = m});
+                Cef.GetGlobalCookieManager().SetCookie("https://chatroulette.com",
+                    new Cookie() {Path = "/", Domain = "chatroulette.com", Name = "mod", Value = m});
+            }
 
             this._browser = new ChromiumWebBrowser("https://chatroulette.com");
             this._browser.ConsoleMessage +=
@@ -64,12 +67,14 @@ namespace ChatRoulette.Core.Session
                         this.BrowserBanState = true;
                     if (args.Message.Contains("Stream started"))
                         this.BrowserBanState = false;
-                    
+
+                    if (args.Message.Contains("Search started."))
+                        this.Status = Status.Wait;
                     if (args.Message.Contains("Client is now ready to begin."))
                         this.Status = Status.EnableCamera;
                     if (args.Message.Contains("Setup publisher and camera turned on"))
                         this.Status = Status.Start;
-                    if (args.Message.Contains("Setup subscriber -success"))
+                    if (args.Message.Contains("Setup subscriber - success"))
                         this.Status = Status.PartnerConnected;
                     if (args.Message.Contains("partner skipped") || args.Message.Contains("partner banned by moderator"))
                         this.Status = Status.PutResult;
@@ -131,12 +136,12 @@ namespace ChatRoulette.Core.Session
             this._logger.Trace($"Ban button clicked");
         }
 
-        public async Task HidePartnerInfo()
+        public void HidePartnerInfo()
         {
             if (!this._browser.CanExecuteJavascriptInMainFrame)
                 return;
             var script = "$('#partner-info-container').hide();";
-            await this._browser.EvaluateScriptAsync(script);
+            this._browser.ExecuteScriptAsync(script);
         }
 
         public async Task PreparePage()
@@ -173,50 +178,50 @@ namespace ChatRoulette.Core.Session
         {
             var isShowed = await this.IsPartnerShowed();
             if (isShowed)
-                await this.HidePartner();
+                this.HidePartner();
             else
-                await this.ShowPartner();
+                this.ShowPartner();
         }
 
-        public async Task ShowPartner()
+        public void ShowPartner()
         {
             if (!this._browser.CanExecuteJavascriptInMainFrame)
                 return;
             var script = "$('.publisher-row').show();";
-            await this._browser.EvaluateScriptAsync(script);
+            this.Browser.ExecuteScriptAsync(script);
         }
 
-        public async Task HidePartner()
+        public void HidePartner()
         {
             if (!this._browser.CanExecuteJavascriptInMainFrame)
                 return;
             var script = "$('.publisher-row').hide();";
-            await this._browser.EvaluateScriptAsync(script);
+            this._browser.ExecuteScriptAsync(script);
         }
 
         public async Task ToggleMyCamera()
         {
             var isShowed = await this.IsMyCameraShowed();
             if (isShowed)
-                await this.HideMyCamera();
+                this.HideMyCamera();
             else
-                await this.ShowMyCamera();
+                this.ShowMyCamera();
         }
 
-        public async Task ShowMyCamera()
+        public void ShowMyCamera()
         {
             if (!this._browser.CanExecuteJavascriptInMainFrame)
                 return;
             var script = "$('.subscriber-row').show();";
-            await this._browser.EvaluateScriptAsync(script);
+            this._browser.ExecuteScriptAsync(script);
         }
 
-        public async Task HideMyCamera()
+        public void HideMyCamera()
         {
             if (!this._browser.CanExecuteJavascriptInMainFrame)
                 return;
             var script = "$('.subscriber-row').hide();";
-            await this._browser.EvaluateScriptAsync(script);
+            this._browser.ExecuteScriptAsync(script);
         }
 
         private async Task<bool> IsMyCameraShowed()
@@ -278,12 +283,13 @@ namespace ChatRoulette.Core.Session
                 this.OnPropertyChanged();
             }
         }
-
         public Status Status
         {
             get => this._status;
             set
             {
+                if (this._status == value)
+                    return;
                 this._status = value;
                 this.OnPropertyChanged();
             }
