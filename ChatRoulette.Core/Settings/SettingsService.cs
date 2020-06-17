@@ -39,7 +39,6 @@ namespace ChatRoulette.Core.Settings
 
         public AppSettings()
         {
-
         }
 
         public AppSettings(int userId)
@@ -250,6 +249,40 @@ namespace ChatRoulette.Core.Settings
                         {Key.Left, ChatConnectionResultEnum.Spam1},
                         {Key.Up, ChatConnectionResultEnum.Spam2},
                         {Key.Right, ChatConnectionResultEnum.Spam3},
+                    }
+                },
+                new SessionPreference
+                {
+                    Mod = "1",
+                    Name = "30 min bannable",
+                    WorkTime = TimeSpan.FromMinutes(30),
+                    WithBan = true,
+                    WithReport = false,
+                    AllowedResults = new List<ChatConnectionResultEnum>
+                    {
+                        ChatConnectionResultEnum.Male,
+                        ChatConnectionResultEnum.Female,
+                        ChatConnectionResultEnum.OnePlus,
+                        ChatConnectionResultEnum.Nobody,
+                        ChatConnectionResultEnum.Inappropriate,
+                        ChatConnectionResultEnum.HiddenInappropriate,
+                        ChatConnectionResultEnum.Cp,
+                        ChatConnectionResultEnum.Blanket,
+                        ChatConnectionResultEnum.Performer,
+                        ChatConnectionResultEnum.PartnerDisconnected
+                    },
+                    KeyToResultBinds = new Dictionary<Key, ChatConnectionResultEnum>
+                    {
+                        {Key.W, ChatConnectionResultEnum.Male},
+                        {Key.F, ChatConnectionResultEnum.Female},
+                        {Key.A, ChatConnectionResultEnum.OnePlus},
+                        {Key.S, ChatConnectionResultEnum.Nobody},
+                        {Key.Space, ChatConnectionResultEnum.Inappropriate},
+                        {Key.D, ChatConnectionResultEnum.HiddenInappropriate},
+
+                        {Key.D1, ChatConnectionResultEnum.Cp},
+                        {Key.D2, ChatConnectionResultEnum.Blanket},
+                        {Key.D3, ChatConnectionResultEnum.Performer},
                     }
                 }
             };

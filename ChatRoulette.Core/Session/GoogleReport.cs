@@ -79,6 +79,14 @@ namespace ChatRoulette.Core.Session
                     spreadsheetId = BannableTableId;
                     list = BannableTableList;
                     break;
+                case "Like USER":
+                    spreadsheetId = MainTableId;
+                    list = MainTableList;
+                    break;
+                case "30 min bannable":
+                    spreadsheetId = OffTableId;
+                    list = OffTableListMod1;
+                    break;
             }
 
             UpdateGoogleSheetInBatch(objNeRecords, spreadsheetId, $"{list}!A:AA", service);
@@ -89,10 +97,12 @@ namespace ChatRoulette.Core.Session
             switch (preference.Name)
             {
                 case "Default":
+                case "Like USER":
                     return GenerateMainTableData(session, id);
                 case "User perspective":
                 case "Unmoderated perspective":
                 case "Post moderation perspective":
+                case "30 min bannable":
                     return GenerateOffTableData(preference, session);
                 case "Bannable":
                     return GenerateBannableTableData(session, id);

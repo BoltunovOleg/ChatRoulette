@@ -143,6 +143,45 @@ namespace ChatRoulette
                 };
                 service.Settings.SessionPreferences.Add(newPref);
             }
+
+            if (service.Settings.SessionPreferences.All(x => x.Name != "30 min bannable"))
+            {
+                var newPref = new SessionPreference
+                {
+                    Mod = "1",
+                    Name = "30 min bannable",
+                    WorkTime = TimeSpan.FromMinutes(30),
+                    WithBan = true,
+                    WithReport = false,
+                    AllowedResults = new List<ChatConnectionResultEnum>
+                    {
+                        ChatConnectionResultEnum.Male,
+                        ChatConnectionResultEnum.Female,
+                        ChatConnectionResultEnum.OnePlus,
+                        ChatConnectionResultEnum.Nobody,
+                        ChatConnectionResultEnum.Inappropriate,
+                        ChatConnectionResultEnum.HiddenInappropriate,
+                        ChatConnectionResultEnum.Cp,
+                        ChatConnectionResultEnum.Blanket,
+                        ChatConnectionResultEnum.Performer,
+                        ChatConnectionResultEnum.PartnerDisconnected
+                    },
+                    KeyToResultBinds = new Dictionary<Key, ChatConnectionResultEnum>
+                    {
+                        {Key.W, ChatConnectionResultEnum.Male},
+                        {Key.F, ChatConnectionResultEnum.Female},
+                        {Key.A, ChatConnectionResultEnum.OnePlus},
+                        {Key.S, ChatConnectionResultEnum.Nobody},
+                        {Key.Space, ChatConnectionResultEnum.Inappropriate},
+                        {Key.D, ChatConnectionResultEnum.HiddenInappropriate},
+
+                        {Key.D1, ChatConnectionResultEnum.Cp},
+                        {Key.D2, ChatConnectionResultEnum.Blanket},
+                        {Key.D3, ChatConnectionResultEnum.Performer},
+                    }
+                };
+                service.Settings.SessionPreferences.Add(newPref);
+            }
         }
 
         private void SetCred()

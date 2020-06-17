@@ -13,14 +13,16 @@ namespace ChatRoulette.Core.Session
 {
     public class BrowserController : INotifyPropertyChanged
     {
+        private readonly SessionPreference _sessionPreference;
         private readonly Logger _logger;
         private bool _isFirstLoading = true;
         private ChromiumWebBrowser _browser;
         private bool _browserBanState;
         private Status _status;
 
-        public BrowserController(string mod, Logger logger)
+        public BrowserController(SessionPreference sessionPreference, Logger logger)
         {
+            this._sessionPreference = sessionPreference;
             this._logger = logger;
 
             if (!Cef.IsInitialized)
@@ -42,14 +44,21 @@ namespace ChatRoulette.Core.Session
                 Cef.Initialize(cefSettings, performDependencyCheck: false, browserProcessHandler: null);
             }
 
-            if (mod != "-1")
+            if (this._sessionPreference.Mod != "-1")
             {
-                var m = mod;
-                if (mod != "0")
+                var m = this._sessionPreference.Mod;
+                if (this._sessionPreference.Mod != "0")
                 {
-                    Cef.GetGlobalCookieManager().SetCookie("https://chatroulette.com",
-                        new Cookie() {Path = "/", Domain = "chatroulette.com", Name = "counter", Value = mod});
-                    m = "-100";
+                    if (this._sessionPreference.WithBan)
+                    {
+                        m = "0";
+                    }
+                    else
+                    {
+                        Cef.GetGlobalCookieManager().SetCookie("https://chatroulette.com",
+                            new Cookie() {Path = "/", Domain = "chatroulette.com", Name = "counter", Value = this._sessionPreference.Mod });
+                        m = "-100";
+                    }
                 }
 
                 Cef.GetGlobalCookieManager().SetCookie("https://chatroulette.com",

@@ -45,7 +45,7 @@ namespace ChatRoulette.Core.Session
         public SessionController(ChatRepository repository, SessionPreference sessionPreference, ChatSession session,
             Logger logger, Action<object> bugtrackerReport)
         {
-            this.BrowserController = new BrowserController(sessionPreference.Mod, logger);
+            this.BrowserController = new BrowserController(sessionPreference, logger);
             this.BrowserController.PropertyChanged += this.BrowserControllerOnPropertyChanged;
             this._repository = repository;
             this._sessionPreference = sessionPreference;
