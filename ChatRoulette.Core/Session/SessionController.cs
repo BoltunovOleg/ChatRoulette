@@ -27,8 +27,19 @@ namespace ChatRoulette.Core.Session
         public List<ChatConnection> ChatConnections { get; } =
             new List<ChatConnection>();
 
+        public int CameraCount
+        {
+            get => _cameraCount;
+            set
+            {
+                _cameraCount = value;
+                OnPropertyChanged();
+            }
+        }
+
         public Stopwatch IdleTime { get; } = new Stopwatch();
         public Stopwatch CameraTime { get; } = new Stopwatch();
+        public Stopwatch TalkTime { get; } = new Stopwatch();
 
         private readonly ChatRepository _repository;
         private readonly SessionPreference _sessionPreference;
@@ -44,6 +55,7 @@ namespace ChatRoulette.Core.Session
         private bool _banState;
         private bool _browserBanState;
         private bool _eventProcessingStarted;
+        private int _cameraCount;
 
         public SessionController(ChatRepository repository, SessionPreference sessionPreference, ChatSession session,
             Logger logger, Action<object> bugtrackerReport)
@@ -55,6 +67,7 @@ namespace ChatRoulette.Core.Session
             this._session = session;
             this._logger = logger;
             this._bugtrackerReport = bugtrackerReport;
+            CameraCount = 0;
 
             var sessionThread = new Thread(this.SessionTick)
             {
@@ -130,8 +143,18 @@ namespace ChatRoulette.Core.Session
             if (!CameraTime.IsRunning && status == Status.EnableCamera)
                 CameraTime.Start();
             if (CameraTime.IsRunning && status != Status.EnableCamera)
+            {
                 CameraTime.Stop();
+                CameraCount++;
+            }
+
             this.OnPropertyChanged(nameof(this.IdleTime));
+
+            if (!TalkTime.IsRunning && status == Status.PartnerConnected)
+                TalkTime.Start();
+            if (TalkTime.IsRunning && status != Status.PartnerConnected)
+                TalkTime.Stop();
+            this.OnPropertyChanged(nameof(this.TalkTime));
 
             if (status == Status.PartnerConnected)
             {
@@ -282,7 +305,7 @@ namespace ChatRoulette.Core.Session
                 this.BrowserController.Stop();
                 this.StopRecord();
                 var session = this._repository.CloseSessionAsync(this._session).GetAwaiter().GetResult();
-                GoogleReport.Report(this._sessionPreference, session, this._session.UserNumber);
+                GoogleReport.Report(this._sessionPreference, session, this._session.UserNumber, IdleTime.Elapsed, CameraTime.Elapsed, TalkTime.Elapsed, CameraCount);
                 this.OnSessionEnd();
             }
             catch (Exception ex)

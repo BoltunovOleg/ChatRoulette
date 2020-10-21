@@ -131,6 +131,9 @@ namespace ChatRoulette.Core.Session
             {
                 Thread.Sleep(100);
                 var status = this.GetStatus().GetAwaiter().GetResult()?.ToLower();
+                var camera = this.NeedCameraCheck().GetAwaiter().GetResult();
+                if (camera)
+                    this.Status = Status.EnableCamera;
                 if(status == null)
                     continue;
                 if (status == prevStatus)
@@ -282,6 +285,31 @@ namespace ChatRoulette.Core.Session
                          "$('.subscriber-row').css({padding: 0,margin: 0,position: 'absolute',zIndex: 9999,width: '270px',height: '260px',left: 0, bottom: 0});$('.subscriber-row').children().css({margin: 0});";
             }
             await this._browser.EvaluateScriptAsync(script);
+        }
+
+        public async Task<bool> NeedCameraCheck()
+        {
+            if (!this._browser.CanExecuteJavascriptInMainFrame)
+                return false;
+            var script = "";
+            if (this._isv2)
+            {
+                script = "document.getElementsByClassName('cr-header__message')[0].innerText";
+            }
+            else
+            {
+                script = "$('#status')[0].innerHTML";
+            }
+            var execResponse = await this._browser.EvaluateScriptAsync(script);
+            if (execResponse.Success)
+            {
+                var result = Convert.ToString(execResponse.Result);
+                return result == "Smile. Your face needs to be visible";
+            }
+            else
+            {
+                return false;
+            }
         }
 
         public async Task<string> GetStatus()
