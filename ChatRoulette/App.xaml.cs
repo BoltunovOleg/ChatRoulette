@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -6,9 +7,12 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Threading;
+using ChatRoulette.Core.Session;
 using ChatRoulette.Core.Settings;
 using ChatRoulette.Ioc;
+using ChatRoulette.Repository.Model;
 using ChatRoulette.Utils;
 using Exort.AutoUpdate.Wpf;
 using Exort.GithubBugtracker;
@@ -26,17 +30,11 @@ namespace ChatRoulette
         public static GithubBugtracker Bugtracker => IocKernel.Get<GithubBugtracker>();
         public static bool IsDebug { get; private set; }
         public static bool IsConsole { get; private set; }
+        public static bool NoUpdate { get; private set; }
         public static Credentials GtCredentials;
 
         public App()
         {
-            StringBuilder stringBuilder = new StringBuilder();
-            for (var i = 112; i < 26198; i++)
-            {
-                stringBuilder.Append("closes #" + i + ", ");
-            }
-            Clipboard.SetText(stringBuilder.ToString().TrimEnd().TrimEnd(','));
-
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             AppDomain.CurrentDomain.AssemblyResolve += Resolver;
             this.SetCred();
@@ -45,15 +43,6 @@ namespace ChatRoulette
             Current.DispatcherUnhandledException += this.CurrentOnDispatcherUnhandledException;
             AppDomain.CurrentDomain.UnhandledException += this.CurrentDomainOnUnhandledException;
 
-            var autoUpdater = new AutoUpdater("BoltunovOleg", "ChatRoulette", Assembly.GetExecutingAssembly());
-            var t = autoUpdater.CheckUpdate().GetAwaiter().GetResult();
-            if (t)
-            {
-                var release = autoUpdater.GetLatestRelease().GetAwaiter().GetResult();
-                autoUpdater.ShowReleaseInfo(release);
-                App.Current.Shutdown(0);
-            }
-
             LogMachineDetails();
             var settingsService = IocKernel.Get<SettingsService>();
             var path = Path.Combine(Environment.CurrentDirectory, SettingsPath);
@@ -61,14 +50,28 @@ namespace ChatRoulette
             this.FixPreferences();
         }
 
-        protected override void OnStartup(StartupEventArgs e)
+        protected override async void OnStartup(StartupEventArgs e)
         {
-            base.OnStartup(e);
             IsDebug = e.Args.Contains("debug");
             IsConsole = e.Args.Contains("console");
+            NoUpdate = e.Args.Contains("noupdate");
 
             if (IsConsole && !ConsoleManager.HasConsole)
                 ConsoleManager.Show();
+
+            if (!NoUpdate)
+            {
+                var autoUpdater = new AutoUpdater("BoltunovOleg", "ChatRoulette", Assembly.GetExecutingAssembly());
+                var t = await autoUpdater.CheckUpdate();
+                if (t)
+                {
+                    var release = await autoUpdater.GetLatestRelease();
+                    autoUpdater.ShowReleaseInfo(release);
+                    App.Current.Shutdown(0);
+                }
+            }
+
+            base.OnStartup(e);
         }
 
         private void FixPreferences()
@@ -81,16 +84,108 @@ namespace ChatRoulette
                 {
                     SendBugReport("Время сессии менее 29 минут");
                 }
-                if (sessionPreference.Mod == "0")
+            }
+
+            if (service.Settings.SessionPreferences.Count != 2)
+            {
+                service.Settings.SessionPreferences.Clear();
+                service.Settings.SessionPreferences.Add(new SessionPreference
                 {
-                    sessionPreference.WithBan = true;
-                    sessionPreference.WithReport = true;
-                }
-                else
+                    Mod = "0v2",
+                    Name = "Default v2",
+                    WorkTime = TimeSpan.FromMinutes(55),
+                    WithBan = true,
+                    WithReport = false,
+                    WithSpam = true,
+                    AllowedResults = new List<ChatConnectionResultEnum>
+                    {
+                        ChatConnectionResultEnum.Male,
+                        ChatConnectionResultEnum.Female,
+                        ChatConnectionResultEnum.OnePlus,
+                        ChatConnectionResultEnum.Nobody,
+                        ChatConnectionResultEnum.Age13,
+                        ChatConnectionResultEnum.Age16,
+                        ChatConnectionResultEnum.Text,
+                        ChatConnectionResultEnum.Inappropriate,
+                        ChatConnectionResultEnum.HiddenInappropriate,
+                        ChatConnectionResultEnum.Spam1,
+                        ChatConnectionResultEnum.Spam2,
+                        ChatConnectionResultEnum.Spam3,
+                        ChatConnectionResultEnum.PartnerDisconnected
+                    },
+                    KeyToResultBinds = new Dictionary<Key, ChatConnectionResultEnum>
+                    {
+                        {Key.W, ChatConnectionResultEnum.Male},
+                        {Key.F, ChatConnectionResultEnum.Female},
+                        {Key.A, ChatConnectionResultEnum.OnePlus},
+                        {Key.S, ChatConnectionResultEnum.Nobody},
+                        {Key.Space, ChatConnectionResultEnum.Inappropriate},
+                        {Key.D, ChatConnectionResultEnum.HiddenInappropriate},
+
+                        {Key.C, ChatConnectionResultEnum.Text},
+
+                        {Key.Q, ChatConnectionResultEnum.Age13},
+                        {Key.E, ChatConnectionResultEnum.Age16},
+
+                        {Key.Left, ChatConnectionResultEnum.Spam1},
+                        {Key.Up, ChatConnectionResultEnum.Spam2},
+                        {Key.Right, ChatConnectionResultEnum.Spam3},
+
+                        {Key.D1, ChatConnectionResultEnum.Cp},
+                        {Key.D2, ChatConnectionResultEnum.Blanket},
+                        {Key.D3, ChatConnectionResultEnum.Performer},
+                    }
+                });
+                service.Settings.SessionPreferences.Add(new SessionPreference
                 {
-                    sessionPreference.WithBan = false;
-                    sessionPreference.WithReport = false;
-                }
+                    Mod = "-1v2",
+                    Name = "User Perspective V2",
+                    WorkTime = TimeSpan.FromMinutes(30),
+                    WithBan = true,
+                    WithReport = false,
+                    WithSpam = true,
+                    AllowedResults = new List<ChatConnectionResultEnum>
+                    {
+                        ChatConnectionResultEnum.Male,
+                        ChatConnectionResultEnum.Female,
+                        ChatConnectionResultEnum.OnePlus,
+                        ChatConnectionResultEnum.Nobody,
+                        ChatConnectionResultEnum.Age13,
+                        ChatConnectionResultEnum.Age16,
+                        ChatConnectionResultEnum.Text,
+                        ChatConnectionResultEnum.Inappropriate,
+                        ChatConnectionResultEnum.HiddenInappropriate,
+                        ChatConnectionResultEnum.Spam1,
+                        ChatConnectionResultEnum.Spam2,
+                        ChatConnectionResultEnum.Spam3,
+                        ChatConnectionResultEnum.Cp,
+                        ChatConnectionResultEnum.Blanket,
+                        ChatConnectionResultEnum.Performer,
+                        ChatConnectionResultEnum.PartnerDisconnected
+                    },
+                    KeyToResultBinds = new Dictionary<Key, ChatConnectionResultEnum>
+                    {
+                        {Key.W, ChatConnectionResultEnum.Male},
+                        {Key.F, ChatConnectionResultEnum.Female},
+                        {Key.A, ChatConnectionResultEnum.OnePlus},
+                        {Key.S, ChatConnectionResultEnum.Nobody},
+                        {Key.Space, ChatConnectionResultEnum.Inappropriate},
+                        {Key.D, ChatConnectionResultEnum.HiddenInappropriate},
+
+                        {Key.C, ChatConnectionResultEnum.Text},
+
+                        {Key.Q, ChatConnectionResultEnum.Age13},
+                        {Key.E, ChatConnectionResultEnum.Age16},
+
+                        {Key.Left, ChatConnectionResultEnum.Spam1},
+                        {Key.Up, ChatConnectionResultEnum.Spam2},
+                        {Key.Right, ChatConnectionResultEnum.Spam3},
+
+                        {Key.D1, ChatConnectionResultEnum.Cp},
+                        {Key.D2, ChatConnectionResultEnum.Blanket},
+                        {Key.D3, ChatConnectionResultEnum.Performer},
+                    }
+                });
             }
         }
 
@@ -125,9 +220,9 @@ namespace ChatRoulette
                 var settingsService = IocKernel.Get<SettingsService>();
                 if (settingsService?.Settings != null)
                     userId = settingsService.Settings.UserId;
-                await Bugtracker.CreateIssue("BoltunovOleg", "ChatRoulette", "Unhandled exception",
-                    $"UserId: {userId}{Environment.NewLine}" +
-                    $"{JsonConvert.SerializeObject(obj)}");
+                File.WriteAllText(
+                    Path.Combine(Environment.CurrentDirectory, $"crash_{DateTime.Now:dd_MM_yyyy_HH_mm_ss}.data"),
+                    $"UserId: {userId}{Environment.NewLine}{JsonConvert.SerializeObject(obj)}");
             }
             catch (Exception ex)
             {
@@ -154,7 +249,7 @@ namespace ChatRoulette
         {
             if (args.Name.StartsWith("CefSharp"))
             {
-                var assemblyName = args.Name.Split(new[] {','}, 2)[0] + ".dll";
+                var assemblyName = args.Name.Split(new[] { ',' }, 2)[0] + ".dll";
                 var archSpecificPath = Path.Combine(AppDomain.CurrentDomain.SetupInformation.ApplicationBase,
                     Environment.Is64BitProcess ? "x64" : "x86", assemblyName);
 

@@ -33,50 +33,50 @@
 
             public const string Ban = "Suspicious activity has been detected on your feed. We have shut it down. You may try again later, but please be aware that adult content is not permitted on the site. If you believe that the feed has been wrongly identified as adult content, we apologise and please bear with us while the system is being refined.";
 
-        public static Status Parse(string status)
-        {
-            switch (status)
-            {
-                case CameraAndMicrophoneAccess:
-                case EnablingTheCamera:
-                    return Status.EnableCamera;
+        //public static Status Parse(string status)
+        //{
+        //    switch (status)
+        //    {
+        //        case CameraAndMicrophoneAccess:
+        //        case EnablingTheCamera:
+        //            return Status.EnableCamera;
 
-                case WelcomeToChatRoulette:
-                case SmileAtTheCamera:
-                    return Status.Start;
+        //        case WelcomeToChatRoulette:
+        //        case SmileAtTheCamera:
+        //            return Status.Start;
 
-                case ConnectingToPartner:
-                case Searching:
-                    return Status.Wait;
+        //        case ConnectingToPartner:
+        //        case Searching:
+        //            return Status.Wait;
 
-                case YouDisconnected:
-                    return Status.PutResult;
+        //        case YouDisconnected:
+        //            return Status.PutResult;
 
-                case PartnerDisconnected:
-                    return Status.PartnerDisconnected;
+        //        case PartnerDisconnected:
+        //            return Status.PartnerDisconnected;
 
-                case Ban:
-                    return Status.Ban;
+        //        case Ban:
+        //            return Status.Ban;
 
-                case SearchCancelled:
-                    return Status.Error1;
-                case CouldNotConnectToPartner:
-                    return Status.Error2;
-                case VideoStreamWasUnableToConnectFirewall:
-                    return Status.Error3;
-                case TryAgainLater:
-                    return Status.Error4;
-                case RejectedVideoQuality:
-                case RejectedNoFace:
-                case RejectedUnderageFace:
-                case CouldNotDetectFace:
-                case WeCouldNotDetectYourFace:
-                    return Status.Error7;
+        //        case SearchCancelled:
+        //            return Status.Error1;
+        //        case CouldNotConnectToPartner:
+        //            return Status.Error2;
+        //        case VideoStreamWasUnableToConnectFirewall:
+        //            return Status.Error3;
+        //        case TryAgainLater:
+        //            return Status.Error4;
+        //        case RejectedVideoQuality:
+        //        case RejectedNoFace:
+        //        case RejectedUnderageFace:
+        //        case CouldNotDetectFace:
+        //        case WeCouldNotDetectYourFace:
+        //            return Status.Error7;
 
-                default:
-                    return Status.PartnerConnected;
-            }
-        }
+        //        default:
+        //            return Status.PartnerConnected;
+        //    }
+        //}
     }
 
     public enum Status
@@ -86,12 +86,6 @@
         Wait,
         PartnerDisconnected,
         PartnerConnected,
-        PutResult,
-        Error1,
-        Error2,
-        Error3,
-        Error4,
-        Error7,
-        Ban
+        PutResult
     }
 }

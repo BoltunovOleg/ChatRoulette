@@ -39,7 +39,6 @@ namespace ChatRoulette.Core.Settings
 
         public AppSettings()
         {
-
         }
 
         public AppSettings(int userId)
@@ -49,11 +48,12 @@ namespace ChatRoulette.Core.Settings
             {
                 new SessionPreference
                 {
-                    Mod = "0",
-                    Name = "Default",
+                    Mod = "0v2",
+                    Name = "Default v2",
                     WorkTime = TimeSpan.FromMinutes(55),
                     WithBan = true,
-                    WithReport = true,
+                    WithReport = false,
+                    WithSpam = true,
                     AllowedResults = new List<ChatConnectionResultEnum>
                     {
                         ChatConnectionResultEnum.Male,
@@ -87,23 +87,34 @@ namespace ChatRoulette.Core.Settings
                         {Key.Left, ChatConnectionResultEnum.Spam1},
                         {Key.Up, ChatConnectionResultEnum.Spam2},
                         {Key.Right, ChatConnectionResultEnum.Spam3},
+
+                        {Key.D1, ChatConnectionResultEnum.Cp},
+                        {Key.D2, ChatConnectionResultEnum.Blanket},
+                        {Key.D3, ChatConnectionResultEnum.Performer},
                     }
                 },
                 new SessionPreference
                 {
-                    Mod = "1",
-                    Name = "User perspective",
+                    Mod = "-1v2",
+                    Name = "User Perspective V2",
                     WorkTime = TimeSpan.FromMinutes(30),
-                    WithBan = false,
+                    WithBan = true,
                     WithReport = false,
+                    WithSpam = true,
                     AllowedResults = new List<ChatConnectionResultEnum>
                     {
                         ChatConnectionResultEnum.Male,
                         ChatConnectionResultEnum.Female,
                         ChatConnectionResultEnum.OnePlus,
                         ChatConnectionResultEnum.Nobody,
+                        ChatConnectionResultEnum.Age13,
+                        ChatConnectionResultEnum.Age16,
+                        ChatConnectionResultEnum.Text,
                         ChatConnectionResultEnum.Inappropriate,
                         ChatConnectionResultEnum.HiddenInappropriate,
+                        ChatConnectionResultEnum.Spam1,
+                        ChatConnectionResultEnum.Spam2,
+                        ChatConnectionResultEnum.Spam3,
                         ChatConnectionResultEnum.Cp,
                         ChatConnectionResultEnum.Blanket,
                         ChatConnectionResultEnum.Performer,
@@ -118,96 +129,18 @@ namespace ChatRoulette.Core.Settings
                         {Key.Space, ChatConnectionResultEnum.Inappropriate},
                         {Key.D, ChatConnectionResultEnum.HiddenInappropriate},
 
-                        {Key.D1, ChatConnectionResultEnum.Cp},
-                        {Key.D2, ChatConnectionResultEnum.Blanket},
-                        {Key.D3, ChatConnectionResultEnum.Performer},
-                    }
-                },
-                new SessionPreference
-                {
-                    Mod = "2",
-                    Name = "Unmoderated perspective",
-                    WorkTime = TimeSpan.FromMinutes(30),
-                    WithBan = false,
-                    WithReport = false,
-                    AllowedResults = new List<ChatConnectionResultEnum>
-                    {
-                        ChatConnectionResultEnum.Male,
-                        ChatConnectionResultEnum.Female,
-                        ChatConnectionResultEnum.OnePlus,
-                        ChatConnectionResultEnum.Nobody,
-                        ChatConnectionResultEnum.Inappropriate,
-                        ChatConnectionResultEnum.HiddenInappropriate,
-                        ChatConnectionResultEnum.Cp,
-                        ChatConnectionResultEnum.Blanket,
-                        ChatConnectionResultEnum.Performer,
-                        ChatConnectionResultEnum.PartnerDisconnected
-                    },
-                    KeyToResultBinds = new Dictionary<Key, ChatConnectionResultEnum>
-                    {
-                        {Key.W, ChatConnectionResultEnum.Male},
-                        {Key.F, ChatConnectionResultEnum.Female},
-                        {Key.A, ChatConnectionResultEnum.OnePlus},
-                        {Key.S, ChatConnectionResultEnum.Nobody},
-                        {Key.Space, ChatConnectionResultEnum.Inappropriate},
-                        {Key.D, ChatConnectionResultEnum.HiddenInappropriate},
+                        {Key.C, ChatConnectionResultEnum.Text},
+
+                        {Key.Q, ChatConnectionResultEnum.Age13},
+                        {Key.E, ChatConnectionResultEnum.Age16},
+
+                        {Key.Left, ChatConnectionResultEnum.Spam1},
+                        {Key.Up, ChatConnectionResultEnum.Spam2},
+                        {Key.Right, ChatConnectionResultEnum.Spam3},
 
                         {Key.D1, ChatConnectionResultEnum.Cp},
                         {Key.D2, ChatConnectionResultEnum.Blanket},
                         {Key.D3, ChatConnectionResultEnum.Performer},
-                    }
-                },
-                new SessionPreference
-                {
-                    Mod = "3",
-                    Name = "Post moderation perspective",
-                    WorkTime = TimeSpan.FromMinutes(30),
-                    WithBan = false,
-                    WithReport = false,
-                    AllowedResults = new List<ChatConnectionResultEnum>
-                    {
-                        ChatConnectionResultEnum.Male,
-                        ChatConnectionResultEnum.Female,
-                        ChatConnectionResultEnum.OnePlus,
-                        ChatConnectionResultEnum.Nobody,
-                        ChatConnectionResultEnum.Inappropriate,
-                        ChatConnectionResultEnum.HiddenInappropriate,
-                        ChatConnectionResultEnum.Cp,
-                        ChatConnectionResultEnum.Blanket,
-                        ChatConnectionResultEnum.Performer,
-                        ChatConnectionResultEnum.PartnerDisconnected
-                    },
-                    KeyToResultBinds = new Dictionary<Key, ChatConnectionResultEnum>
-                    {
-                        {Key.W, ChatConnectionResultEnum.Male},
-                        {Key.F, ChatConnectionResultEnum.Female},
-                        {Key.A, ChatConnectionResultEnum.OnePlus},
-                        {Key.S, ChatConnectionResultEnum.Nobody},
-                        {Key.Space, ChatConnectionResultEnum.Inappropriate},
-                        {Key.D, ChatConnectionResultEnum.HiddenInappropriate},
-
-                        {Key.D1, ChatConnectionResultEnum.Cp},
-                        {Key.D2, ChatConnectionResultEnum.Blanket},
-                        {Key.D3, ChatConnectionResultEnum.Performer},
-                    }
-                },
-                new SessionPreference
-                {
-                    Mod = "0",
-                    Name = "Bannable",
-                    WorkTime = TimeSpan.FromMinutes(55),
-                    WithBan = false,
-                    WithReport = false,
-                    AllowedResults = new List<ChatConnectionResultEnum>
-                    {
-                        ChatConnectionResultEnum.Inappropriate,
-                        ChatConnectionResultEnum.PartnerDisconnected,
-                        ChatConnectionResultEnum.Anyone
-                    },
-                    KeyToResultBinds = new Dictionary<Key, ChatConnectionResultEnum>
-                    {
-                        {Key.D1, ChatConnectionResultEnum.Inappropriate},
-                        {Key.D2, ChatConnectionResultEnum.Anyone},
                     }
                 }
             };

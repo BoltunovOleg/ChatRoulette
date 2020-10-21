@@ -21,18 +21,10 @@ namespace ChatRoulette.Converters
                         return this.TrueValue;
                     case Status.EnableCamera:
                     case Status.Start:
-                    case Status.Error1:
-                    case Status.Error2:
-                    case Status.Error3:
-                    case Status.Error4:
-                    case Status.Error7:
-                    case Status.Ban:
                     case Status.PartnerDisconnected:
                     case Status.PartnerConnected:
                     case Status.PutResult:
                         return this.FalseValue;
-                    default:
-                        return this.TrueValue;
                 }
             }
             return this.FalseValue;

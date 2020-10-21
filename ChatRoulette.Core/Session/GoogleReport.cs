@@ -14,15 +14,10 @@ namespace ChatRoulette.Core.Session
 {
     public class GoogleReport
     {
-        private const string MainTableId = "1NWWgJwAYl5FYa0fdPgXReaGFt3T17IHBQpJjDJ1yaY0";
         private const string OffTableId = "1KGj48h5y4ZD00mtc5GQZT7ZVY-rFQ22p3mc8-D6q3SI";
-        private const string BannableTableId = "1EhGqbCojIvU6P6gXDGydVAxz5IGBMckqdS9Cja9B9IQ";
 
-        private const string MainTableList = "Data";
-        private const string OffTableListMod1 = "User perspective";
-        private const string OffTableListMod2 = "Unmoderated perspective";
-        private const string OffTableListMod3 = "Post moderation perspective";
-        private const string BannableTableList = "Data";
+        private const string OffTableListMod1V2 = "User perspective V2";
+        private const string OffTableListMod24v7 = "  Moderation 24/7";
 
         public static void Report(SessionPreference preference, ChatSession session, int id)
         {
@@ -59,25 +54,13 @@ namespace ChatRoulette.Core.Session
             string list = "";
             switch (preference.Name)
             {
-                case "Default":
-                    spreadsheetId = MainTableId;
-                    list = MainTableList;
-                    break;
-                case "User perspective":
+                case "User Perspective V2":
                     spreadsheetId = OffTableId;
-                    list = OffTableListMod1;
+                    list = OffTableListMod1V2;
                     break;
-                case "Unmoderated perspective":
+                case "Default v2":
                     spreadsheetId = OffTableId;
-                    list = OffTableListMod2;
-                    break;
-                case "Post moderation perspective":
-                    spreadsheetId = OffTableId;
-                    list = OffTableListMod3;
-                    break;
-                case "Bannable":
-                    spreadsheetId = BannableTableId;
-                    list = BannableTableList;
+                    list = OffTableListMod24v7;
                     break;
             }
 
@@ -88,14 +71,9 @@ namespace ChatRoulette.Core.Session
         {
             switch (preference.Name)
             {
-                case "Default":
-                    return GenerateMainTableData(session, id);
-                case "User perspective":
-                case "Unmoderated perspective":
-                case "Post moderation perspective":
+                case "Default v2":
+                case "User Perspective V2":
                     return GenerateOffTableData(preference, session);
-                case "Bannable":
-                    return GenerateBannableTableData(session, id);
             }
 
             return null;
@@ -146,6 +124,11 @@ namespace ChatRoulette.Core.Session
             obj.Add(session.ChatConnections.Count(x => x.Result == ChatConnectionResultEnum.Female));
             obj.Add(session.ChatConnections.Count(x => x.Result == ChatConnectionResultEnum.OnePlus));
             obj.Add(session.ChatConnections.Count(x => x.Result == ChatConnectionResultEnum.Performer));
+            obj.Add(session.ChatConnections.Count(x =>
+            x.Result == ChatConnectionResultEnum.Spam1 ||
+            x.Result == ChatConnectionResultEnum.Spam2 ||
+            x.Result == ChatConnectionResultEnum.Spam3
+            ));
 
             objNewRecords.Add(obj);
             return objNewRecords;

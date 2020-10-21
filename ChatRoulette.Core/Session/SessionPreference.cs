@@ -14,6 +14,7 @@ namespace ChatRoulette.Core.Session
         public Dictionary<Key, ChatConnectionResultEnum> KeyToResultBinds { get; set; }
         public bool WithBan { get; set; }
         public bool WithReport { get; set; }
+        public bool WithSpam { get; set; }
 
         public SessionPreference()
         {
@@ -24,6 +25,7 @@ namespace ChatRoulette.Core.Session
             this.KeyToResultBinds = new Dictionary<Key, ChatConnectionResultEnum>();
             this.WithBan = true;
             this.WithReport = true;
+            this.WithSpam = true;
         }
     }
 }

@@ -59,14 +59,16 @@ namespace ChatRoulette.ViewModel
             return this.SessionController?.BrowserController?.Browser != null;
         }
 
-        private async Task HideMyCamera()
+        private Task HideMyCamera()
         {
-            await this.SessionController.BrowserController.HideMyCamera();
+            this.SessionController.BrowserController.HideMyCamera();
+            return Task.CompletedTask;
         }
 
-        private async Task ShowMyCamera()
+        private Task ShowMyCamera()
         {
-            await this.SessionController.BrowserController.ShowMyCamera();
+            this.SessionController.BrowserController.ShowMyCamera();
+            return Task.CompletedTask;
         }
 
         public override async Task<bool> KeyDown(Key key)
@@ -128,11 +130,14 @@ namespace ChatRoulette.ViewModel
             switch (e.PropertyName)
             {
                 case nameof(this._sessionController.EventProcessingStarted):
-                    //this.ResultSending = this._sessionController.EventProcessingStarted;
+                    if (this._preference.Mod == "0")
+                        this.ResultSending = this._sessionController.EventProcessingStarted;
                     break;
                 case nameof(this._sessionController.Ip):
                 case nameof(this._sessionController.BanState):
                 case nameof(this._sessionController.BrowserBanState):
+                case nameof(this._sessionController.IdleTime):
+                case nameof(this._sessionController.CameraTime):
                     this.UpdateViewStatus();
                     break;
             }
@@ -140,14 +145,16 @@ namespace ChatRoulette.ViewModel
 
         private void UpdateViewStatus()
         {
+            var txt =
+                $"Idle: {this._sessionController.IdleTime.Elapsed} | {this._sessionController.CameraTime.Elapsed}";
             if (App.IsDebug)
             {
                 this.ViewStatus =
-                    $"IP: {this.SessionController.Ip} | BS: {this._sessionController.BanState} | BBS: {this._sessionController.BrowserBanState}";
+                    $"IP: {this.SessionController.Ip} | {txt} | BS: {this._sessionController.BanState} | BBS: {this._sessionController.BrowserBanState}";
             }
             else
             {
-                this.ViewStatus = $"IP: {this.SessionController.Ip}";
+                this.ViewStatus = $"IP: {this.SessionController.Ip} | {txt}";
             }
         }
 
