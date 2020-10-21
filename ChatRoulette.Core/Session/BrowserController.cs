@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -19,6 +20,9 @@ namespace ChatRoulette.Core.Session
         private ChromiumWebBrowser _browser;
         private bool _browserBanState;
         private Status _status;
+        private readonly string _url;
+        private bool _isv2;
+        private bool _isStopped = false;
 
         public BrowserController(SessionPreference sessionPreference, Logger logger)
         {
@@ -44,28 +48,45 @@ namespace ChatRoulette.Core.Session
                 Cef.Initialize(cefSettings, performDependencyCheck: false, browserProcessHandler: null);
             }
 
+            this._isv2 = this._sessionPreference.Name.ToLower().Contains("v2");
+            if (this._isv2)
+            {
+                this._url = "https://chatroulette.com";
+            }
+            else
+            {
+                this._url = "https://chatroulette.com";
+            }
+
             if (this._sessionPreference.Mod != "-1")
             {
                 var m = this._sessionPreference.Mod;
-                if (this._sessionPreference.Mod != "0")
+                if (_isv2)
                 {
-                    if (this._sessionPreference.WithBan)
+                    m = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2ODUxOTM5ODYsInZhbHVlIjoiLT1TaDNyMWZmPS0ifQ.YM7YIilD-mhLmqIrl8KqcP0faV09MsGEiBDAqAB28fs";
+                }
+                else
+                {
+                    if (this._sessionPreference.Mod != "0")
                     {
-                        m = "0";
-                    }
-                    else
-                    {
-                        Cef.GetGlobalCookieManager().SetCookie("https://chatroulette.com",
-                            new Cookie() {Path = "/", Domain = "chatroulette.com", Name = "counter", Value = this._sessionPreference.Mod });
-                        m = "-100";
+                        if (this._sessionPreference.WithBan)
+                        {
+                            m = "0";
+                        }
+                        else
+                        {
+                            Cef.GetGlobalCookieManager().SetCookie(this._url,
+                                new Cookie() { Path = "/", Domain = this._url.Replace("https://", ""), Name = "counter", Value = this._sessionPreference.Mod });
+                            m = "-100";
+                        }
                     }
                 }
-
-                Cef.GetGlobalCookieManager().SetCookie("https://chatroulette.com",
-                    new Cookie() {Path = "/", Domain = "chatroulette.com", Name = "mod", Value = m});
+                this._logger.Trace("mod for current session: " + m);
+                Cef.GetGlobalCookieManager().SetCookie(this._url,
+                    new Cookie() {Path = "/", Domain = this._url.Replace("https://", ""), Name = "mod", Value = m});
             }
 
-            this._browser = new ChromiumWebBrowser("https://chatroulette.com");
+            this._browser = new ChromiumWebBrowser(this._url);
             this._browser.ConsoleMessage +=
                 (sender, args) =>
                 {
@@ -90,6 +111,44 @@ namespace ChatRoulette.Core.Session
                 };
 
             this._browser.LoadingStateChanged += this.ChromeBrowserOnLoadingStateChanged;
+            if (this._isv2)
+            {
+                var backgroundWorker = new BackgroundWorker();
+                backgroundWorker.DoWork += BackgroundWorkerOnDoWork;
+                backgroundWorker.RunWorkerCompleted += BackgroundWorkerOnRunWorkerCompleted;
+                backgroundWorker.RunWorkerAsync();
+            }
+        }
+
+        private void BackgroundWorkerOnRunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+        }
+
+        private void BackgroundWorkerOnDoWork(object sender, DoWorkEventArgs e)
+        {
+            var prevStatus = "";
+            while (!this._isStopped)
+            {
+                Thread.Sleep(100);
+                var status = this.GetStatus().GetAwaiter().GetResult()?.ToLower();
+                if(status == null)
+                    continue;
+                if (status == prevStatus)
+                    continue;
+                prevStatus = status;
+                switch (status)
+                {
+                    case "start":
+                        this.Status = Status.Start;
+                        break;
+                    case "skip":
+                        this.Status = Status.PartnerConnected;
+                        break;
+                    case "wait":
+                        this.Status = Status.Wait;
+                        break;
+                }
+            }
         }
 
         public Task RefreshPage()
@@ -117,7 +176,15 @@ namespace ChatRoulette.Core.Session
             if (!this._browser.CanExecuteJavascriptInMainFrame)
                 return;
             this._logger.Trace($"Start next button click");
-            var script = "$('#next')[0].click()";
+            var script = "";
+            if (this._isv2)
+            {
+                script = "document.getElementsByClassName('cr-button')[0].click();";
+            }
+            else
+            {
+                script = "$('#next')[0].click()";
+            }
 
             this._browser.ExecuteScriptAsync(script);
             this._logger.Trace($"Next button clicked");
@@ -128,7 +195,15 @@ namespace ChatRoulette.Core.Session
             if (!this._browser.CanExecuteJavascriptInMainFrame)
                 return;
             this._logger.Trace($"Start report button click");
-            var script = "$('#report')[0].click()";
+            var script = "";
+            if (this._isv2)
+            {
+                script = "document.getElementsByClassName('icon-report')[0].parentElement.click().";
+            }
+            else
+            {
+                script = "$('#report')[0].click()";
+            }
 
             this._browser.ExecuteScriptAsync(script);
             this._logger.Trace($"Report button clicked");
@@ -139,7 +214,34 @@ namespace ChatRoulette.Core.Session
             if (!this._browser.CanExecuteJavascriptInMainFrame)
                 return;
             this._logger.Trace($"Start ban button click");
-            var script = "$('#ban')[0].click()";
+            var script = "";
+            if (this._isv2)
+            {
+                script = "document.getElementsByClassName('icon-nsfw')[0].parentElement.click();";
+            }
+            else
+            {
+                script = "$('#ban')[0].click()";
+            }
+
+            this._browser.ExecuteScriptAsync(script);
+            this._logger.Trace($"Ban button clicked");
+        }
+
+        public void SpamPartner()
+        {
+            if (!this._browser.CanExecuteJavascriptInMainFrame)
+                return;
+            this._logger.Trace($"Start ban button click");
+            var script = "";
+            if (this._isv2)
+            {
+                script = "document.getElementsByClassName('icon-spam')[0].parentElement.click();";
+            }
+            else
+            {
+                script = "$('#spam')[0].click()";
+            }
 
             this._browser.ExecuteScriptAsync(script);
             this._logger.Trace($"Ban button clicked");
@@ -149,7 +251,15 @@ namespace ChatRoulette.Core.Session
         {
             if (!this._browser.CanExecuteJavascriptInMainFrame)
                 return;
-            var script = "$('#partner-info-container').hide();";
+            var script = "";
+            if (this._isv2)
+            {
+                script = "";
+            }
+            else
+            {
+                script = "$('#partner-info-container').hide();";
+            }
             this._browser.ExecuteScriptAsync(script);
         }
 
@@ -157,12 +267,20 @@ namespace ChatRoulette.Core.Session
         {
             if (!this._browser.CanExecuteJavascriptInMainFrame)
                 return;
-            var script = "$(document.body).css({backgroundColor: '#303030'});" +
+            var script = "";
+            if (this._isv2)
+            {
+                script = "";
+            }
+            else
+            {
+                script = "$(document.body).css({backgroundColor: '#303030'});" +
                          "$('.fa-row').hide();$('.footer-content').hide();" +
                          "$('.publisher-row').children().css({margin:0,padding:0,width:'100%',height:'100%'});" +
                          "$('#camera-subscriber-outer-container').css({height: '100%'});" +
                          "$('.row').css({padding: 0});" +
                          "$('.subscriber-row').css({padding: 0,margin: 0,position: 'absolute',zIndex: 9999,width: '270px',height: '260px',left: 0, bottom: 0});$('.subscriber-row').children().css({margin: 0});";
+            }
             await this._browser.EvaluateScriptAsync(script);
         }
 
@@ -170,7 +288,15 @@ namespace ChatRoulette.Core.Session
         {
             if (!this._browser.CanExecuteJavascriptInMainFrame)
                 return null;
-            var script = "$('#status')[0].innerHTML";
+            var script = "";
+            if (this._isv2)
+            {
+                script = "document.getElementsByClassName('cr-button')[0].innerText";
+            }
+            else
+            {
+                script = "$('#status')[0].innerHTML";
+            }
             var execResponse = await this._browser.EvaluateScriptAsync(script);
             if (execResponse.Success)
             {
@@ -179,7 +305,7 @@ namespace ChatRoulette.Core.Session
             }
             else
             {
-                return null;
+                return "wait";
             }
         }
 
@@ -195,8 +321,16 @@ namespace ChatRoulette.Core.Session
         public void ShowPartner()
         {
             if (!this._browser.CanExecuteJavascriptInMainFrame)
-                return;
-            var script = "$('.publisher-row').show();";
+                return; 
+            var script = "";
+            if (this._isv2)
+            {
+                script = "";
+            }
+            else
+            {
+                script = "$('.publisher-row').show();";
+            }
             this.Browser.ExecuteScriptAsync(script);
         }
 
@@ -204,7 +338,15 @@ namespace ChatRoulette.Core.Session
         {
             if (!this._browser.CanExecuteJavascriptInMainFrame)
                 return;
-            var script = "$('.publisher-row').hide();";
+            var script = "";
+            if (this._isv2)
+            {
+                script = "";
+            }
+            else
+            {
+                script = "$('.publisher-row').hide();";
+            }
             this._browser.ExecuteScriptAsync(script);
         }
 
@@ -221,7 +363,15 @@ namespace ChatRoulette.Core.Session
         {
             if (!this._browser.CanExecuteJavascriptInMainFrame)
                 return;
-            var script = "$('.subscriber-row').show();";
+            var script = "";
+            if (this._isv2)
+            {
+                script = "";
+            }
+            else
+            {
+                script = "$('.subscriber-row').show();";
+            }
             this._browser.ExecuteScriptAsync(script);
         }
 
@@ -229,7 +379,15 @@ namespace ChatRoulette.Core.Session
         {
             if (!this._browser.CanExecuteJavascriptInMainFrame)
                 return;
-            var script = "$('.subscriber-row').hide();";
+            var script = "";
+            if (this._isv2)
+            {
+                script = "";
+            }
+            else
+            {
+                script = "$('.subscriber-row').hide();";
+            }
             this._browser.ExecuteScriptAsync(script);
         }
 
@@ -237,7 +395,15 @@ namespace ChatRoulette.Core.Session
         {
             if (!this._browser.CanExecuteJavascriptInMainFrame)
                 return false;
-            var script = "$('.subscriber-row').css('display');";
+            var script = "";
+            if (this._isv2)
+            {
+                script = "";
+            }
+            else
+            {
+                script = "$('.subscriber-row').css('display');";
+            }
             var execResponse = await this._browser.EvaluateScriptAsync(script);
             if (execResponse.Success)
             {
@@ -254,7 +420,15 @@ namespace ChatRoulette.Core.Session
         {
             if (!this._browser.CanExecuteJavascriptInMainFrame)
                 return false;
-            var script = "$('.publisher-row').css('display');";
+            var script = "";
+            if (this._isv2)
+            {
+                script = "";
+            }
+            else
+            {
+                script = "$('.publisher-row').css('display');";
+            }
             var execResponse = await this._browser.EvaluateScriptAsync(script);
             if (execResponse.Success)
             {
@@ -269,6 +443,7 @@ namespace ChatRoulette.Core.Session
 
         public void Stop()
         {
+            this._isStopped = true;
             if (this._browser.IsInitialized)
                 this._browser.LoadHtml("<html><body>Closing session...</body></html>");
         }

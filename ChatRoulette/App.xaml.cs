@@ -84,28 +84,19 @@ namespace ChatRoulette
                 {
                     SendBugReport("Время сессии менее 29 минут");
                 }
-
-                if (sessionPreference.Mod == "0")
-                {
-                    sessionPreference.WithBan = true;
-                    sessionPreference.WithReport = true;
-                }
-                else
-                {
-                    sessionPreference.WithBan = false;
-                    sessionPreference.WithReport = false;
-                }
             }
 
-            if (service.Settings.SessionPreferences.All(x => x.Name != "Like USER"))
+            if (service.Settings.SessionPreferences.Count != 2)
             {
-                var newPref = new SessionPreference
+                service.Settings.SessionPreferences.Clear();
+                service.Settings.SessionPreferences.Add(new SessionPreference
                 {
-                    Mod = "-1",
-                    Name = "Like USER",
+                    Mod = "0v2",
+                    Name = "Default v2",
                     WorkTime = TimeSpan.FromMinutes(55),
-                    WithBan = false,
+                    WithBan = true,
                     WithReport = false,
+                    WithSpam = true,
                     AllowedResults = new List<ChatConnectionResultEnum>
                     {
                         ChatConnectionResultEnum.Male,
@@ -139,28 +130,34 @@ namespace ChatRoulette
                         {Key.Left, ChatConnectionResultEnum.Spam1},
                         {Key.Up, ChatConnectionResultEnum.Spam2},
                         {Key.Right, ChatConnectionResultEnum.Spam3},
-                    }
-                };
-                service.Settings.SessionPreferences.Add(newPref);
-            }
 
-            if (service.Settings.SessionPreferences.All(x => x.Name != "30 min bannable"))
-            {
-                var newPref = new SessionPreference
+                        {Key.D1, ChatConnectionResultEnum.Cp},
+                        {Key.D2, ChatConnectionResultEnum.Blanket},
+                        {Key.D3, ChatConnectionResultEnum.Performer},
+                    }
+                });
+                service.Settings.SessionPreferences.Add(new SessionPreference
                 {
-                    Mod = "1",
-                    Name = "30 min bannable",
+                    Mod = "-1v2",
+                    Name = "User Perspective V2",
                     WorkTime = TimeSpan.FromMinutes(30),
                     WithBan = true,
                     WithReport = false,
+                    WithSpam = true,
                     AllowedResults = new List<ChatConnectionResultEnum>
                     {
                         ChatConnectionResultEnum.Male,
                         ChatConnectionResultEnum.Female,
                         ChatConnectionResultEnum.OnePlus,
                         ChatConnectionResultEnum.Nobody,
+                        ChatConnectionResultEnum.Age13,
+                        ChatConnectionResultEnum.Age16,
+                        ChatConnectionResultEnum.Text,
                         ChatConnectionResultEnum.Inappropriate,
                         ChatConnectionResultEnum.HiddenInappropriate,
+                        ChatConnectionResultEnum.Spam1,
+                        ChatConnectionResultEnum.Spam2,
+                        ChatConnectionResultEnum.Spam3,
                         ChatConnectionResultEnum.Cp,
                         ChatConnectionResultEnum.Blanket,
                         ChatConnectionResultEnum.Performer,
@@ -175,12 +172,20 @@ namespace ChatRoulette
                         {Key.Space, ChatConnectionResultEnum.Inappropriate},
                         {Key.D, ChatConnectionResultEnum.HiddenInappropriate},
 
+                        {Key.C, ChatConnectionResultEnum.Text},
+
+                        {Key.Q, ChatConnectionResultEnum.Age13},
+                        {Key.E, ChatConnectionResultEnum.Age16},
+
+                        {Key.Left, ChatConnectionResultEnum.Spam1},
+                        {Key.Up, ChatConnectionResultEnum.Spam2},
+                        {Key.Right, ChatConnectionResultEnum.Spam3},
+
                         {Key.D1, ChatConnectionResultEnum.Cp},
                         {Key.D2, ChatConnectionResultEnum.Blanket},
                         {Key.D3, ChatConnectionResultEnum.Performer},
                     }
-                };
-                service.Settings.SessionPreferences.Add(newPref);
+                });
             }
         }
 
@@ -244,7 +249,7 @@ namespace ChatRoulette
         {
             if (args.Name.StartsWith("CefSharp"))
             {
-                var assemblyName = args.Name.Split(new[] {','}, 2)[0] + ".dll";
+                var assemblyName = args.Name.Split(new[] { ',' }, 2)[0] + ".dll";
                 var archSpecificPath = Path.Combine(AppDomain.CurrentDomain.SetupInformation.ApplicationBase,
                     Environment.Is64BitProcess ? "x64" : "x86", assemblyName);
 

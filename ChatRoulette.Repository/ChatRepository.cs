@@ -10,7 +10,7 @@ namespace ChatRoulette.Repository
 {
     public class ChatRepository : DbContext
     {
-        public const int AllowedMinute = 15;
+        public const int AllowedMinute = 59;
         public DbSet<ChatSession> ChatSessions { get; set; }
         public DbSet<ChatConnection> ChatConnections { get; set; }
 

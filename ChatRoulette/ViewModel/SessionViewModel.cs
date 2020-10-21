@@ -136,6 +136,8 @@ namespace ChatRoulette.ViewModel
                 case nameof(this._sessionController.Ip):
                 case nameof(this._sessionController.BanState):
                 case nameof(this._sessionController.BrowserBanState):
+                case nameof(this._sessionController.IdleTime):
+                case nameof(this._sessionController.CameraTime):
                     this.UpdateViewStatus();
                     break;
             }
@@ -143,14 +145,16 @@ namespace ChatRoulette.ViewModel
 
         private void UpdateViewStatus()
         {
+            var txt =
+                $"Idle: {this._sessionController.IdleTime.Elapsed} | {this._sessionController.CameraTime.Elapsed}";
             if (App.IsDebug)
             {
                 this.ViewStatus =
-                    $"IP: {this.SessionController.Ip} | BS: {this._sessionController.BanState} | BBS: {this._sessionController.BrowserBanState}";
+                    $"IP: {this.SessionController.Ip} | {txt} | BS: {this._sessionController.BanState} | BBS: {this._sessionController.BrowserBanState}";
             }
             else
             {
-                this.ViewStatus = $"IP: {this.SessionController.Ip}";
+                this.ViewStatus = $"IP: {this.SessionController.Ip} | {txt}";
             }
         }
 

@@ -43,9 +43,6 @@
         </Grid.ColumnDefinitions>
 
         <ContentControl Grid.Row="0" Grid.Column="0" Content="{Binding SessionController.BrowserController.Browser}" />
-        <TextBlock Grid.Row="0" Grid.Column="0" Text="Ждем подключения..." HorizontalAlignment="Center"
-                   VerticalAlignment="Center"
-                   Visibility="{Binding SessionController.BrowserController.Status, Converter={StaticResource StatusToVisibilityConverter}}" />
 
         <Border Grid.Row="0" Grid.Column="0" Background="{DynamicResource MaterialDesignPaper}"
                 Visibility="{Binding ResultSending, Converter={StaticResource InverseBoolConverter}}">

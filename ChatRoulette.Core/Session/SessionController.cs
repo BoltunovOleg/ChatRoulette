@@ -27,6 +27,9 @@ namespace ChatRoulette.Core.Session
         public List<ChatConnection> ChatConnections { get; } =
             new List<ChatConnection>();
 
+        public Stopwatch IdleTime { get; } = new Stopwatch();
+        public Stopwatch CameraTime { get; } = new Stopwatch();
+
         private readonly ChatRepository _repository;
         private readonly SessionPreference _sessionPreference;
         private readonly ChatSession _session;
@@ -118,6 +121,18 @@ namespace ChatRoulette.Core.Session
 
         private void UpdateConnectionInfo(Status status)
         {
+            if (!IdleTime.IsRunning && status == Status.Wait)
+                IdleTime.Start();
+            if (IdleTime.IsRunning && status != Status.Wait)
+                IdleTime.Stop();
+            this.OnPropertyChanged(nameof(this.IdleTime));
+
+            if (!CameraTime.IsRunning && status == Status.EnableCamera)
+                CameraTime.Start();
+            if (CameraTime.IsRunning && status != Status.EnableCamera)
+                CameraTime.Stop();
+            this.OnPropertyChanged(nameof(this.IdleTime));
+
             if (status == Status.PartnerConnected)
             {
                 var id = this.ChatConnectionInfos.Count + 1;
@@ -206,28 +221,23 @@ namespace ChatRoulette.Core.Session
 
             var action = "skipped";
 
-            if (this._sessionPreference.WithBan && (result == ChatConnectionResultEnum.Inappropriate ||
-                                                    result == ChatConnectionResultEnum.HiddenInappropriate))
+            if (this._sessionPreference.WithBan && result == ChatConnectionResultEnum.Inappropriate)
             {
                 this.BanState = true;
                 action = "banned";
                 this.BrowserController.BanPartner();
             }
-            else
-            {
-                if (this._sessionPreference.WithReport && (result == ChatConnectionResultEnum.Spam1 ||
+
+            if (this._sessionPreference.WithSpam && (result == ChatConnectionResultEnum.Spam1 ||
                                                            result == ChatConnectionResultEnum.Spam2 ||
                                                            result == ChatConnectionResultEnum.Spam3))
-                {
-                    action = "reported";
-                        this.BrowserController.ReportPartner();
-                        this.BrowserController.NextPartner();
-                }
-                else
-                {
-                    
-                    this.BrowserController.NextPartner();
-                }
+            {
+                action = "spam";
+                this.BrowserController.SpamPartner();
+            }
+            if (action == "skipped")
+            {
+                this.BrowserController.NextPartner();
             }
 
             this._logger.Trace($"Partner {action} in {swLocal.Elapsed}");
@@ -317,71 +327,57 @@ namespace ChatRoulette.Core.Session
             this._recorder?.Dispose();
         }
 
-        public ChatConnectionInfo CurrentConnectionInfo
-        {
+        public ChatConnectionInfo CurrentConnectionInfo {
             get => this._currentConnectionInfo;
-            set
-            {
+            set {
                 this._currentConnectionInfo = value;
                 this.OnPropertyChanged();
             }
         }
 
-        public TimeSpan SessionLeftTime
-        {
+        public TimeSpan SessionLeftTime {
             get => this._sessionLeftTime;
-            set
-            {
+            set {
                 this._sessionLeftTime = value;
                 this.OnPropertyChanged();
             }
         }
 
-        public BrowserController BrowserController
-        {
+        public BrowserController BrowserController {
             get => this._browserController;
-            set
-            {
+            set {
                 this._browserController = value;
                 this.OnPropertyChanged();
             }
         }
 
-        public string Ip
-        {
+        public string Ip {
             get => this._ip;
-            set
-            {
+            set {
                 this._ip = value;
                 this.OnPropertyChanged();
             }
         }
 
-        public bool BrowserBanState
-        {
+        public bool BrowserBanState {
             get => this._browserBanState;
-            set
-            {
+            set {
                 this._browserBanState = value;
                 this.OnPropertyChanged();
             }
         }
 
-        public bool BanState
-        {
+        public bool BanState {
             get => this._banState;
-            set
-            {
+            set {
                 this._banState = value;
                 this.OnPropertyChanged();
             }
         }
 
-        public bool EventProcessingStarted
-        {
+        public bool EventProcessingStarted {
             get => this._eventProcessingStarted;
-            set
-            {
+            set {
                 this._eventProcessingStarted = value;
                 this.OnPropertyChanged();
             }
